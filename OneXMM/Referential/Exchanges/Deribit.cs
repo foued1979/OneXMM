@@ -3,6 +3,8 @@
 namespace OneXMM.Referential.Exchanges
 {
     using Microsoft.VisualBasic.FileIO;
+    using OneXMM.Referential.Assets;
+    using OneXMM.Referential.Exchanges.Instruments;
     using OneXMM.Referential.Exchanges.Requests;
 
     internal sealed class Deribit : Exchange
@@ -33,11 +35,38 @@ namespace OneXMM.Referential.Exchanges
             return optionDef.result.Select(o => (Option)o).Where(o => o.OptionType == OptionTypes.Put).ToArray();
         }
 
-        public string InstrumentNameToExpiry(string instrumentName)
+        public override Futures[] LoadFutures(string symbol)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_instruments?currency={symbol}&expired=false&kind=future");
+
+            var response = _httpClient.SendAsync(request);
+            var futureDef = Utils.Utils.ConvertJsonToObject<DeribitGetInstruments>(response.ConfigureAwait(false).GetAwaiter().GetResult().Content.ReadAsStream());
+            if (futureDef is null || futureDef.testnet != IsTestMode) throw new Exception("Issue loading futures from Deribit.");
+            return futureDef.result.Where(f => !f.instrument_name.Contains("PERPETUAL")).Select(o => (Futures)o).ToArray();
+        }
+
+        public override double GetSpot(Pair pair)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book?depth=1&instrument_name={pair.ExchangeSymbols[OneXMM.Exchanges.Deribit]}");
+
+            var response = _httpClient.SendAsync(request);
+            var spotDef = Utils.Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.ConfigureAwait(false).GetAwaiter().GetResult().Content.ReadAsStream());
+            if (spotDef is null || spotDef.testnet != IsTestMode) throw new Exception("Issue loading futures from Deribit.");
+            return spotDef.result.Spot;
+        }
+
+        public string OptionNameToExpiry(string instrumentName)
         {
             var i1 = instrumentName.IndexOf('-');
             var i2 = instrumentName.IndexOf('-', i1 + 1);
             var expiry = instrumentName.Substring(i1 + 1, i2 - i1 - 1);
+            return expiry.Length == 6 ? "0" + expiry : expiry;
+        }
+
+        public string FutureNameToExpiry(string instrumentName)
+        {
+            var i1 = instrumentName.IndexOf('-');
+            var expiry = instrumentName.Substring(i1 + 1);
             return expiry.Length == 6 ? "0" + expiry : expiry;
         }
 

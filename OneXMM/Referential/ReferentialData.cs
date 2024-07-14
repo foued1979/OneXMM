@@ -2,6 +2,7 @@
 
 namespace OneXMM.Referential
 {
+    using OneXMM.Configuration;
     using OneXMM.Referential.Assets;
 
     public class ReferentialData
@@ -10,11 +11,11 @@ namespace OneXMM.Referential
 
         public SortedDictionary<string, Assets.Pair> Pairs = new SortedDictionary<string, Assets.Pair>();
 
-        private string[] _pairList = [];
-        public string[] ListOfPairs
+        private PairDef[] _pairDefs;
+        public PairDef[] PairDefs
         {
-            get => _pairList;
-            set { _pairList = value; foreach (var pair in value) AddPair(pair); }
+            get { return _pairDefs; }
+            set { _pairDefs = value; foreach (var pairDef in value) AddPair(pairDef); }
         }
 
         public Pair? GetPair(string coinSymbol, string baseSymbol)
@@ -23,13 +24,10 @@ namespace OneXMM.Referential
             return p;
         }
 
-        private void AddPair(string pair)
+        private void AddPair(PairDef pairDef)
         {
-            var assets = pair.Split('/');
-            if (assets.Length != 2) throw new ArgumentException($"Bad pair definition: {pair}.");
-
-            var coin = new Coin(assets[0]);
-            var counter = new Coin(assets[1]);
+            if (!Coins.TryGetValue(pairDef.Coin, out var coin)) throw new Exception($"Unknown coin {pairDef.Coin}.");
+            if (!Coins.TryGetValue(pairDef.Base, out var counter)) throw new Exception($"Unknown coin {pairDef.Base}.");
 
             lock (Coins)
             { 
@@ -37,7 +35,7 @@ namespace OneXMM.Referential
                 if (!Coins.ContainsKey(counter.Symbol)) Coins.Add(counter.Symbol, counter);
             }
 
-            var p = new Pair(coin, counter);
+            var p = new Pair(coin, counter, pairDef.ExchangeSymbols);
 
             lock (Pairs)
             {

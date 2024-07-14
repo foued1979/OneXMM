@@ -5,8 +5,13 @@ namespace OneXMM.Referential.Assets
     public sealed class Coin
     {
         public string Symbol { get; } = "";
+        public string Address { get; } = "";
 
-        public Coin(string symbol) { Symbol = symbol; }
+        public Coin(string symbol, string address) 
+        { 
+            Symbol = symbol;
+            Address = address;
+        }
 
         public override bool Equals(object? obj)
         {

@@ -2,7 +2,7 @@
 
 namespace OneXMM.Referential.Exchanges.Instruments
 {
-    internal sealed class DeribitOptionDef
+    internal sealed class DeribitInstrumentDef
     {
         public string base_currency { get; set; }
         public string counter_currency { get; set; }
@@ -12,9 +12,9 @@ namespace OneXMM.Referential.Exchanges.Instruments
         public double strike { get; set; }
         public string instrument_name { get; set; }
 
-        public DeribitOptionDef() { }
+        public DeribitInstrumentDef() { }
 
-        public static explicit operator Option(DeribitOptionDef optionDef)
+        public static explicit operator Option(DeribitInstrumentDef optionDef)
         {
             var exchange = Config.Exchanges[OneXMM.Exchanges.Deribit.ToString()];
             return new Option(exchange,
@@ -22,7 +22,16 @@ namespace OneXMM.Referential.Exchanges.Instruments
                 Config.RefData.GetPair(optionDef.base_currency, optionDef.counter_currency) ?? throw new Exception($"Unknown pair {optionDef.base_currency}/{optionDef.counter_currency} for option on {exchange.Name}."),
                 optionDef.option_type.Equals("Call") ? OptionTypes.Call : OptionTypes.Put,
                 optionDef.strike,
-                (exchange as Deribit)!.InstrumentNameToExpiry(optionDef.instrument_name));
+                (exchange as Deribit)!.OptionNameToExpiry(optionDef.instrument_name));
+        }
+
+        public static explicit operator Futures(DeribitInstrumentDef optionDef)
+        {
+            var exchange = Config.Exchanges[OneXMM.Exchanges.Deribit.ToString()];
+            return new Futures(exchange,
+                optionDef.instrument_name,
+                Config.RefData.GetPair(optionDef.base_currency, optionDef.counter_currency) ?? throw new Exception($"Unknown pair {optionDef.base_currency}/{optionDef.counter_currency} for option on {exchange.Name}."),
+                (exchange as Deribit)!.FutureNameToExpiry(optionDef.instrument_name));
         }
     }
 }

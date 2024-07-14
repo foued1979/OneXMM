@@ -4,6 +4,7 @@ namespace OneXMM.Referential.Exchanges
 {
     using OneXMM.Configuration;
     using OneXMM.Interfaces;
+    using OneXMM.Referential.Assets;
     using OneXMM.Utils;
 
     public abstract class Exchange : IExchange
@@ -32,6 +33,10 @@ namespace OneXMM.Referential.Exchanges
         }
 
         public abstract Option[] LoadOptions(string symbol);
+
+        public abstract Futures[] LoadFutures(string symbol);
+
+        public abstract double GetSpot(Pair pair);
 
         public DateTime ToExpiry(string expiryStr)
         {

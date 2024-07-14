@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="Nethereum.ABI" Version="4.20.0" />
     <PackageReference Include="Nethereum.Accounts" Version="4.20.0" />
     <PackageReference Include="Nethereum.BlockchainProcessing" Version="4.20.0" />

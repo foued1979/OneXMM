@@ -4,14 +4,16 @@ namespace OneXMM.Referential.Assets
 {
     public sealed class Pair
     {
+        public string Symbol => $"{Coin.Symbol}/{Base.Symbol}";
         public Coin Coin { get; }
         public Coin Base { get; }
-        public string Symbol => string.Format("{0}/{1}", Coin.Symbol, Base.Symbol);
+        public Dictionary<OneXMM.Exchanges, string> ExchangeSymbols { get; }
 
-        public Pair(Coin quote, Coin counter)
+        public Pair(Coin coin, Coin cBase, Dictionary<OneXMM.Exchanges, string> exchangeSymbols)
         {
-            Coin = quote;
-            Base = counter;
+            Coin = coin;
+            Base = cBase;
+            ExchangeSymbols = exchangeSymbols;
         }
 
         public override bool Equals(object? obj)

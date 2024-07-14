@@ -1,8 +1,36 @@
 {
-  "ListOfPairs": [
-    "BTC/USD",
-    "BTC/USDT",
-    "ETH/USD",
-    "ETH/USDT"
+  "Coins": {
+    "BTC": {
+      "Symbol": "BTC",
+      "Address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
+    },
+    "ETH": {
+      "Symbol": "ETH",
+      "Address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    },
+    "USDT": {
+      "Symbol": "USD",
+      "Address": "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    },
+    "USD": {
+      "Symbol": "USD",
+      "Address": ""
+    }
+  },
+  "PairDefs": [
+    {
+      "Coin": "BTC",
+      "Base": "USDT",
+      "ExchangeSymbols": {
+        "Deribit": "BTC_USDT"
+      }
+    },
+    {
+      "Coin": "ETH",
+      "Base": "USDT",
+      "ExchangeSymbols": {
+        "Deribit": "ETH_USDT"
+      }
+    }
   ]
 }
