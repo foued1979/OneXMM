@@ -1,0 +1,69 @@
+﻿using Nethereum.Contracts;
+using System;
+
+namespace OneXMM.Communication
+{
+    internal sealed class EthereumLikeRequestManager<FType> : RequestManager<FType>
+        where FType : Enum
+    {
+        private readonly Contract _contract;
+        private readonly string _accountAddress;
+
+        private SortedDictionary<FType, Function> _functionsMapping = new SortedDictionary<FType, Function>();
+        private SortedDictionary<FType, bool> _functionHasOutput = new SortedDictionary<FType, bool>();
+
+        public EthereumLikeRequestManager(Utils.EthereumAccount account, Contract contract) : base()
+        {
+            _contract = contract;
+            _accountAddress = account.Account.Address;
+
+            foreach (FType functionType in Enum.GetValues(typeof(FType)))
+            {
+                var functionBuilder = contract.ContractBuilder.GetFunctionBuilder(functionType.ToString());
+                var function = contract.GetFunction(functionType.ToString());
+
+                _functionHasOutput.Add(functionType, functionBuilder.FunctionABI.OutputParameters.Length > 0);
+                _functionsMapping.Add(functionType, function);
+            }
+        }
+
+        public override dynamic ExecuteTask(FType functionType, params object[] parameters)
+        {
+            if (_queueMapping[functionType])
+            {
+                while (_queueMapping[functionType]) ;
+                return _lastResult[functionType];
+            }
+            else
+            {
+                _queueMapping[functionType] = true;
+
+                try
+                {
+                    var function = _functionsMapping[functionType];
+
+                    if (_functionHasOutput[functionType])
+                    {
+                        var response = function.CallAsync(function.CreateCallInput(parameters)).ConfigureAwait(false).GetAwaiter().GetResult();
+                        var res = function.CallDecodingToDefaultAsync(parameters).GetAwaiter().GetResult();
+
+                        _lastResult[functionType] = res;
+                        return res;
+                    }
+                    else
+                    {
+                        return function.SendTransactionAndWaitForReceiptAsync(_accountAddress, new CancellationToken(), parameters).ConfigureAwait(false).GetAwaiter().GetResult();
+                    }
+                }
+                catch
+                {
+                    return _lastResult[functionType];
+                }
+                finally
+                {
+                    _queueMapping[functionType] = false;
+                }
+            }
+        }
+    }
+}
