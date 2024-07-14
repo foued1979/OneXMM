@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "OneXMM": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

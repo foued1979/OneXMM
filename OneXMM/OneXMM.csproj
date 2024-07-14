@@ -7,10 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Configuration\Referential.json" />
+    <None Remove="Configuration\Settings.json" />
     <None Remove="Resources\XMM_Abi.json" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Configuration\Settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Configuration\Referential.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\XMM_Abi.json" />
   </ItemGroup>
 

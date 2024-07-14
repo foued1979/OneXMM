@@ -67,7 +67,7 @@ namespace OneXMM.Factories
 
             // The Infura token to communicate with the blockchain
             // When using Hardhat, this header is not important
-            httpClient.DefaultRequestHeaders.Add("user", "7cb2a61ab7d84b6a995f7ec68ac2bc89");
+            if (!isTestMode) httpClient.DefaultRequestHeaders.Add("user", "7cb2a61ab7d84b6a995f7ec68ac2bc89");
 
             var attr = isTestMode
                 ? Blockchains.HardHat.GetAttributeForEnum<Blockchains, BlockchainDetailsAttribute>()

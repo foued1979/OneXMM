@@ -3,9 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneXMM", "OneXMM\OneXMM.csproj", "{B685EE3B-45F6-488E-AE05-82DE319ADDBA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OneXMM", "OneXMM\OneXMM.csproj", "{B685EE3B-45F6-488E-AE05-82DE319ADDBA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher", "Launcher\Launcher.csproj", "{650F0491-6B38-4BD6-B56F-7C277349F139}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Launcher", "Launcher\Launcher.csproj", "{650F0491-6B38-4BD6-B56F-7C277349F139}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configuration", "Configuration", "{BF3D51BD-F073-4258-ADAD-D3A235F0C9ED}"
+	ProjectSection(SolutionItems) = preProject
+		OneXMM\Configuration\Settings.json = OneXMM\Configuration\Settings.json
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
