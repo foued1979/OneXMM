@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OneXMM.Referential.Exchanges.Instruments
+namespace OneXMM.Referential.Exchanges.Responses
 {
     internal sealed class DeribitOrderBookDef
     {

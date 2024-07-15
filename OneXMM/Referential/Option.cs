@@ -7,6 +7,7 @@ namespace OneXMM.Referential
 
     public sealed class Option
     {
+        public int Id { get; }
         public Exchange Exchange { get; }
         public string Symbol { get; }
         public Assets.Pair Pair { get; }
@@ -14,8 +15,9 @@ namespace OneXMM.Referential
         public double Strike { get; }
         public DateTime Expiry { get; }
 
-        public Option(Exchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, string expiry)
+        public Option(int id, Exchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, string expiry)
         {
+            Id = id;
             Exchange = exchange;
             Symbol = symbol;
             Pair = pair;
@@ -26,7 +28,7 @@ namespace OneXMM.Referential
 
         public double Price(DateTime asof, double spot, VolatilitySurface volSurface)
         {
-            var expiry = (Expiry - volSurface.SurfaceDate).TotalDays / 365.0;
+            var expiry = (Expiry - volSurface.SurfaceDate).TotalDays * Constants.OneOver365;
             var forward = volSurface.GetForward(spot, asof, Expiry);
             var vol = volSurface.GetVol(forward, Strike, Expiry);
 

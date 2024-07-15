@@ -28,7 +28,7 @@ namespace OneXMM.Pricing
             SmileDate = smileDate;
             SmileExpiry = smileExpiry;
 
-            tenor = (smileExpiry - smileDate).TotalDays / 365.0;
+            tenor = (smileExpiry - smileDate).TotalDays * Constants.OneOver365;
         }
 
         public SABR WithParameters(double atm, double alpha, double beta, double rho)

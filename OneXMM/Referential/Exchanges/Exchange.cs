@@ -38,6 +38,10 @@ namespace OneXMM.Referential.Exchanges
 
         public abstract double GetSpot(Pair pair);
 
+        public abstract double GetOptionPrice(Option option);
+
+        public abstract double[] GetOptionPrices(Option[] options);
+
         public DateTime ToExpiry(string expiryStr)
         {
             return DateTime.ParseExact(expiryStr, _config.ExpiryFormat, null).Add(Cutoff).ToLocalTime();

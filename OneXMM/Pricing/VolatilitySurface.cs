@@ -5,6 +5,9 @@ namespace OneXMM.Pricing
     using OneXMM.Referential.Assets;
     using OneXMM.Referential;
     using OneXMM.Utils;
+    using OneXMM.Referential.Exchanges;
+    using System.Reflection;
+    using OneXMM.Interfaces;
 
     public class VolatilitySurface
     {
@@ -13,13 +16,74 @@ namespace OneXMM.Pricing
         private SortedDictionary<DateTime, SABR> _smiles = new SortedDictionary<DateTime, SABR>();
 
         public Pair Pair { get; }
+        public IExchange Exchange { get; }
         public SABR[] Smiles => _smiles.Values.ToArray();
         public DateTime SurfaceDate { get; }
 
-        public VolatilitySurface(Pair pair, DateTime surfaceDate)
+        public VolatilitySurface(DateTime surfaceDate, Pair pair, IExchange exchange)
         {
             Pair = pair;
+            Exchange = exchange;
             SurfaceDate = surfaceDate; 
+        }
+
+        public void Calibrate(VolUpdateTempos updateTempo)
+        {
+            var spot = Exchange.GetSpot(Pair);
+            var smiles = new Dictionary<DateTime, SABR>(_smiles.Count);
+            var now = DateTime.Now;
+
+            switch (updateTempo)
+            {
+                case VolUpdateTempos.OneHour:
+                    var oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneDayMaturity));
+                    break;
+                case VolUpdateTempos.TwoHours:
+                    oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
+                    var oneWeekMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(7);
+                    var twoWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneDayMaturity));
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneWeekMaturity));
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, twoWeeksMaturity));
+                    break;
+                case VolUpdateTempos.FourHours:
+                    oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
+                    oneWeekMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(7);
+                    twoWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    var threeWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    var oneMonthMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    var twoMonthsMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    var threeMonthsMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneDayMaturity));
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneWeekMaturity));
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, twoWeeksMaturity));
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, threeWeeksMaturity));
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneMonthMaturity));
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, twoMonthsMaturity));
+                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, threeMonthsMaturity));
+                    break;
+                default:
+                    throw new NotImplementedException($"Unknown tempo {updateTempo} for calibration.");
+
+            }
+
+            var SABRToCalibrate = new Dictionary<SABR, Option[]>(smiles.Count);
+
+            for (int i = 0; i < smiles.Count; ++i)
+            {
+                var smile = smiles.Values.ElementAt(i);
+                SABRToCalibrate.Add(smile, smile.Options.SelectOptions(spot));
+            }
+
+            var waitingTime = new TimeSpan(0, 0, 0, 1, 10);
+
+            for (int i = 0; i < SABRToCalibrate.Count; ++i)
+            {
+                var startTime = DateTime.Now;
+
+                var prices = Exchange.GetOptionPrices(SABRToCalibrate.ElementAt(i).Value);
+            }
         }
 
         public void UpdateFutures(string symbol, DateTime asof, double spot, double marketPrice)

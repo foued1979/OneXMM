@@ -23,9 +23,9 @@ namespace OneXMM
             }
         }
 
-        public static VolatilitySurface CreateVolSurface(DateTime asof, Pair pair, Futures[] futures, Option[] options)
+        public static VolatilitySurface CreateVolSurface(DateTime asof, Pair pair, IExchange exchange, Futures[] futures, Option[] options)
         {
-            var newSurface = new VolatilitySurface(pair, asof);
+            var newSurface = new VolatilitySurface(asof, pair, exchange);
 
             var fillTasks = new Task[2];
 

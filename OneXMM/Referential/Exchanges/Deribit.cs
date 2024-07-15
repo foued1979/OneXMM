@@ -2,9 +2,7 @@
 
 namespace OneXMM.Referential.Exchanges
 {
-    using Microsoft.VisualBasic.FileIO;
     using OneXMM.Referential.Assets;
-    using OneXMM.Referential.Exchanges.Instruments;
     using OneXMM.Referential.Exchanges.Requests;
 
     internal sealed class Deribit : Exchange
@@ -51,8 +49,45 @@ namespace OneXMM.Referential.Exchanges
 
             var response = _httpClient.SendAsync(request);
             var spotDef = Utils.Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.ConfigureAwait(false).GetAwaiter().GetResult().Content.ReadAsStream());
-            if (spotDef is null || spotDef.testnet != IsTestMode) throw new Exception("Issue loading futures from Deribit.");
+            if (spotDef is null) throw new Exception("Issue loading futures from Deribit.");
             return spotDef.result.Spot;
+        }
+
+        public override double GetOptionPrice(Option option)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book_by_instrument_id?depth=1&instrument_id={option.Id}");
+
+            var response = _httpClient.SendAsync(request);
+            var spotDef = Utils.Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.ConfigureAwait(false).GetAwaiter().GetResult().Content.ReadAsStream());
+            if (spotDef is null) throw new Exception("Issue loading options from Deribit.");
+            return spotDef.result.Spot;
+        }
+
+        public override double[] GetOptionPrices(Option[] options)
+        {
+            if (options.Length > 5) throw new ArgumentException($"Deribit - Number of requests: {options.Length}. Max number of requests per second is 5.");
+
+            var responses = new Task[options.Length];
+            var prices = new double[options.Length];
+
+            for (int i = 0; i < options.Length; ++i)
+            {
+                var index = i;
+
+                responses[index] = Task.Run(() =>
+                {
+                    var option = options[index];
+                    var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book_by_instrument_id?depth=1&instrument_id={option.Id}");
+                    var response = _httpClient.SendAsync(request);
+
+                    var price = Utils.Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.GetAwaiter().GetResult().Content.ReadAsStream());
+                    if (price is null) throw new Exception("Issue loading prices from Deribit.");
+                    prices[index] = price.result.Spot;
+                });
+            }
+            
+            Task.WaitAll(responses);
+            return prices;
         }
 
         public string OptionNameToExpiry(string instrumentName)

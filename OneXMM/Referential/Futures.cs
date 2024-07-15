@@ -6,14 +6,16 @@ namespace OneXMM.Referential
 
     public sealed class Futures
     {
+        public int Id { get; }
         public double Yield { get; private set; }
         public Exchange Exchange { get; }
         public string Symbol { get; }
         public Assets.Pair Pair { get; }
         public DateTime Expiry { get; }
 
-        public Futures(Exchange exchange, string symbol, Assets.Pair pair, string expiry)
+        public Futures(int id, Exchange exchange, string symbol, Assets.Pair pair, string expiry)
         {
+            Id = id;
             Exchange = exchange;
             Symbol = symbol;
             Pair = pair;

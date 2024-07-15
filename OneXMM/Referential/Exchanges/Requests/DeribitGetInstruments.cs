@@ -2,7 +2,7 @@
 
 namespace OneXMM.Referential.Exchanges.Requests
 {
-    using OneXMM.Referential.Exchanges.Instruments;
+    using OneXMM.Referential.Exchanges.Responses;
 
     internal class DeribitGetInstruments
     {
