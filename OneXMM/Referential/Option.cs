@@ -5,13 +5,19 @@ namespace OneXMM.Referential
     using OneXMM.Pricing;
     using OneXMM.Referential.Exchanges;
 
-    public sealed class Option
+    public sealed class Option : IComparable<Option>
     {
         public int Id { get; }
         public Exchange Exchange { get; }
         public string Symbol { get; }
         public Assets.Pair Pair { get; }
         public OptionTypes OptionType { get; }
+
+        public Option(OptionTypes optionType)
+        {
+            OptionType = optionType;
+        }
+
         public double Strike { get; }
         public DateTime Expiry { get; }
 
@@ -38,8 +44,36 @@ namespace OneXMM.Referential
             var nsd = new MathNet.Numerics.Distributions.Normal(0, 1);
 
             return OptionType == OptionTypes.Call
-                ? forward * nsd.CumulativeDistribution(d1) - Strike * nsd.CumulativeDistribution(d2)
-                : Strike * nsd.CumulativeDistribution(1.0 - d2) - forward * nsd.CumulativeDistribution(1.0 - d1);
+                ? nsd.CumulativeDistribution(d1) - Strike / forward * nsd.CumulativeDistribution(d2)
+                : Strike / forward * nsd.CumulativeDistribution(-d2) - nsd.CumulativeDistribution(-d1);
+        }
+
+        public double Price(DateTime asof, double forward, SABR smile)
+        {
+            var expiry = (Expiry - smile.SmileDate).TotalDays * Constants.OneOver365;
+            var vol = smile.GetVol(forward, Strike);
+
+            var volSqrtT = vol * System.Math.Sqrt(expiry);
+            var d1 = System.Math.Log(forward / Strike) / volSqrtT + 0.5 * volSqrtT;
+            var d2 = d1 - volSqrtT;
+            var nsd = new MathNet.Numerics.Distributions.Normal(0, 1);
+
+            return OptionType == OptionTypes.Call
+                ? nsd.CumulativeDistribution(d1) - Strike / forward * nsd.CumulativeDistribution(d2)
+                : Strike / forward * nsd.CumulativeDistribution(-d2) - nsd.CumulativeDistribution(-d1);
+        }
+
+        public override int GetHashCode()
+        {
+            return Id;
+        }
+
+        public int CompareTo(Option? other)
+        {
+            if (other is null) return -1;
+
+            var expiryCompare = Expiry.CompareTo(other.Expiry);
+            return expiryCompare == 0 ? Strike.CompareTo(other.Strike) : expiryCompare;
         }
     }
 }

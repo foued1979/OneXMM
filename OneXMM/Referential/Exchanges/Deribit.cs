@@ -53,6 +53,16 @@ namespace OneXMM.Referential.Exchanges
             return spotDef.result.Spot;
         }
 
+        public override double GetSpot(Futures futures)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book_by_instrument_id?depth=1&instrument_id={futures.Id}");
+
+            var response = _httpClient.SendAsync(request);
+            var spotDef = Utils.Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.ConfigureAwait(false).GetAwaiter().GetResult().Content.ReadAsStream());
+            if (spotDef is null) throw new Exception("Issue loading futures from Deribit.");
+            return spotDef.result.Spot;
+        }
+
         public override double GetOptionPrice(Option option)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book_by_instrument_id?depth=1&instrument_id={option.Id}");
@@ -63,12 +73,12 @@ namespace OneXMM.Referential.Exchanges
             return spotDef.result.Spot;
         }
 
-        public override double[] GetOptionPrices(Option[] options)
+        public override SortedDictionary<Option, double> GetOptionPrices(Option[] options)
         {
             if (options.Length > 5) throw new ArgumentException($"Deribit - Number of requests: {options.Length}. Max number of requests per second is 5.");
 
             var responses = new Task[options.Length];
-            var prices = new double[options.Length];
+            var prices = new SortedDictionary<Option, double>();
 
             for (int i = 0; i < options.Length; ++i)
             {
@@ -82,7 +92,7 @@ namespace OneXMM.Referential.Exchanges
 
                     var price = Utils.Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.GetAwaiter().GetResult().Content.ReadAsStream());
                     if (price is null) throw new Exception("Issue loading prices from Deribit.");
-                    prices[index] = price.result.Spot;
+                    lock (prices) prices.Add(option, price.result.Spot);
                 });
             }
             

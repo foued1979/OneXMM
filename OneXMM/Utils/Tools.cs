@@ -54,20 +54,13 @@ namespace OneXMM.Utils
         public static Option[] SelectOptions(this SortedDictionary<double, Option> options, double spot)
         {
             var strikes = options.Keys;
-            var res = new List<Option>(5);
+            var res = new List<Option>(4);
 
             for (int i = 0; i < strikes.Count; ++i) 
             {
                 var strike = strikes.ElementAt(i);
 
-                if (strike == spot)
-                {
-                    var count = 0;
-                    while (i - 2 + count < 0) i++;
-                    while (i - 2 + count < strikes.Count && count < 5) { res.Add(options.Values.ElementAt(i - 2 + count)); count++; }
-                    break;
-                }
-                else if (spot < strike)
+                if (strike >= spot)
                 {
                     var count = 0;
                     while (i - 2 + count < 0) i++;

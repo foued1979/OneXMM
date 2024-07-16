@@ -5,9 +5,8 @@ namespace OneXMM.Pricing
     using OneXMM.Referential.Assets;
     using OneXMM.Referential;
     using OneXMM.Utils;
-    using OneXMM.Referential.Exchanges;
-    using System.Reflection;
     using OneXMM.Interfaces;
+    using MathNet.Numerics.Optimization;
 
     public class VolatilitySurface
     {
@@ -27,7 +26,7 @@ namespace OneXMM.Pricing
             SurfaceDate = surfaceDate; 
         }
 
-        public void Calibrate(VolUpdateTempos updateTempo)
+        public SABR[] Calibrate(VolUpdateTempos updateTempo)
         {
             var spot = Exchange.GetSpot(Pair);
             var smiles = new Dictionary<DateTime, SABR>(_smiles.Count);
@@ -76,14 +75,39 @@ namespace OneXMM.Pricing
                 SABRToCalibrate.Add(smile, smile.Options.SelectOptions(spot));
             }
 
-            var waitingTime = new TimeSpan(0, 0, 0, 1, 10);
+            var calibrationTasks = new Task<MinimizationResult>[SABRToCalibrate.Count];
+            var prices = new SortedDictionary<Option, double>[SABRToCalibrate.Count];
+            var result = new SABR[SABRToCalibrate.Count];
 
             for (int i = 0; i < SABRToCalibrate.Count; ++i)
             {
-                var startTime = DateTime.Now;
+                var index = i;
 
-                var prices = Exchange.GetOptionPrices(SABRToCalibrate.ElementAt(i).Value);
+                var elementsToCalibrate = SABRToCalibrate.ElementAt(i).Value;
+                var forward = Exchange.GetInterpolatedForward(elementsToCalibrate.First().Expiry, _futures);
+                Thread.Sleep(1000);
+
+                prices[index] = Exchange.GetOptionPrices(elementsToCalibrate);
+
+                var min = VolOptimizer.CalibrateSmile(forward, SABRToCalibrate.ElementAt(index).Key, prices[index]).MinimizingPoint;
+                result[i] = SABRToCalibrate.ElementAt(i).Key.WithParameters(min[0], min[1], min[2], min[3]);
+                //calibrationTasks[index] = Task<MinimizationResult>.Run(() =>
+                //{
+                //    return VolOptimizer.CalibrateSmile(forward, SABRToCalibrate.ElementAt(index).Key, prices[index]);
+                //});
+
+                Thread.Sleep(1000);
             }
+
+            //Task.WaitAll(calibrationTasks);
+            
+            //for (int i = 0; i < SABRToCalibrate.Count; ++i)
+            //{
+            //    var parameters = calibrationTasks[i].Result.MinimizingPoint;
+            //    result[i] = SABRToCalibrate.ElementAt(i).Key.WithParameters(parameters[0], parameters[1], parameters[2], parameters[3]);
+            //}
+
+            return result;
         }
 
         public void UpdateFutures(string symbol, DateTime asof, double spot, double marketPrice)

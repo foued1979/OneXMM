@@ -2,12 +2,13 @@
 
 namespace OneXMM.Pricing
 {
+    using MathNet.Numerics.Integration;
     using OneXMM.Referential;
+    using System.Runtime.CompilerServices;
 
     public sealed class SABR
     {
         private double tenor;
-        private double e;
         private double fmid;
         private double g1;
         private double g2;
@@ -15,8 +16,8 @@ namespace OneXMM.Pricing
         public DateTime SmileDate { get; }
         public DateTime SmileExpiry { get; }
         
-        public double ATMVol { get; private set; }
         public double Alpha { get; private set; }
+        public double Vega { get; private set; }
         public double Beta { get; private set; }
         public double Rho { get; private set; }
 
@@ -31,11 +32,10 @@ namespace OneXMM.Pricing
             tenor = (smileExpiry - smileDate).TotalDays * Constants.OneOver365;
         }
 
-        public SABR WithParameters(double atm, double alpha, double beta, double rho)
+        public SABR WithParameters(double alpha, double vega, double beta, double rho)
         {
-            e = tenor * alpha * alpha;
-            ATMVol = atm;
             Alpha = alpha;
+            Vega = vega;
             Beta = beta;
             Rho = rho;
 
@@ -58,22 +58,44 @@ namespace OneXMM.Pricing
         {
             if (forward == 0 || strike == 0) return double.NaN;
 
-            fmid = System.Math.Sqrt(forward * strike);
-            var cf = System.Math.Pow(fmid, Beta);
+            var ln = Math.Log(forward / strike);
+            var one_minus_beta = 1 - Beta;
+            var lnb = one_minus_beta * ln;
+            var sigmaB = one_minus_beta * Alpha;
+            var lnbSq = lnb * lnb;
 
-            g1 = Beta / fmid;
-            g2 = -Beta * (1 - Beta) / (fmid * fmid);
+            var mid = cf(forward, strike, Beta);
+            var midSq = mid * mid;
 
-            var eta = Alpha / (ATMVol * (1 - Beta)) * (System.Math.Pow(forward, 1 - Beta) - System.Math.Pow(strike, 1 - Beta));
-            var s = System.Math.Sqrt(1 - 2 * Rho * eta + eta * eta);
-            var D = System.Math.Log((s + eta - Rho) / (1 - Rho));
+            var f3 = sigmaB * sigmaB / (24.0 * midSq) + 0.25 * Rho * Alpha * Vega * Beta / mid + (2 - 3 * Rho * Rho) * Vega * Vega / 24.0;
 
-            var fact = ATMVol * cf / Alpha;
-            var f1 = (2 * g2 - g1 * g1 + 1.0 / (fmid * fmid)) / 24.0 * fact * fact;
-            var f2 = Rho * g1 / 4.0 * fact;
-            var f3 = (2.0 - 3 * Rho * Rho) / 24.0;
+            if (forward == strike) return Alpha / Math.Pow(forward, one_minus_beta) * (1 + f3 * tenor);
 
-            return Alpha * System.Math.Log(forward / strike) / D * (1 + e * (f1 + f2 + f3));
+            var f1 = 1 + lnbSq / 24.0 + lnbSq * lnbSq / 1920.0;
+            var f2 = Alpha / (mid * f1);
+            var e = eta(Alpha, Vega, mid, forward, strike);
+
+            return f2 * e / Xsi(Rho, e) * (1 + f3 * tenor);
+        }
+        // alpha is sigma0
+        // Vega is alpha
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double cf(double f, double k, double Beta)
+        {
+            return Math.Pow(f * k, 0.5 * (1 - Beta));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double eta(double atm, double alpha, double cf, double f, double k)
+        {
+            return alpha / atm * cf * Math.Log(f / k);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Xsi(double rho, double eta)
+        {
+            var s = Math.Sqrt(1 - 2 * rho * eta + eta * eta);
+            return Math.Log((s - rho + eta) / (1 - rho));
         }
     }
 }

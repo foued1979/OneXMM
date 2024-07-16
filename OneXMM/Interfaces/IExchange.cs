@@ -13,8 +13,12 @@ namespace OneXMM.Interfaces
 
         double GetSpot(Pair pair);
 
+        double GetSpot(Futures futures);
+
         public double GetOptionPrice(Option option);
 
-        public double[] GetOptionPrices(Option[] options);
+        double GetInterpolatedForward(DateTime maturity, SortedDictionary<DateTime, Futures> futures);
+
+        public SortedDictionary<Option, double> GetOptionPrices(Option[] options);
     }
 }
