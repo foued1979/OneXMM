@@ -51,7 +51,7 @@ namespace OneXMM.Utils
             return [allSmiles.Last()];
         }
 
-        public static Option[] SelectOptions(this SortedDictionary<double, Option> options, double spot)
+        public static Option[] SelectOptions(this SortedDictionary<double, Option> options, double forward)
         {
             var strikes = options.Keys;
             var res = new List<Option>(4);
@@ -60,11 +60,11 @@ namespace OneXMM.Utils
             {
                 var strike = strikes.ElementAt(i);
 
-                if (strike >= spot)
+                if (strike >= forward)
                 {
                     var count = 0;
                     while (i - 2 + count < 0) i++;
-                    while (i - 2 + count < strikes.Count && count < 4) { res.Add(options.Values.ElementAt(i - 2 + count)); count++; }
+                    while (i - 2 + count < strikes.Count && count < 5) { res.Add(options.Values.ElementAt(i - 2 + count)); count++; }
                     break;
                 }
             }

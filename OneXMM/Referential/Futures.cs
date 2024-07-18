@@ -13,6 +13,8 @@ namespace OneXMM.Referential
         public Assets.Pair Pair { get; }
         public DateTime Expiry { get; }
 
+        public Futures() { }
+
         public Futures(int id, Exchange exchange, string symbol, Assets.Pair pair, string expiry)
         {
             Id = id;

@@ -25,13 +25,16 @@ var futures = deribit.LoadFutures("BTC");
 var btcVolSurface = Factory.CreateVolSurface(DateTime.Now, pair, deribit, futures, options);
 var sabrs = btcVolSurface.Calibrate(VolUpdateTempos.OneHour);
 
+var spot = 0.0;
 var price = 0.0;
-foreach (var o in options)
-    if (Math.Abs(o.Strike - 63800) < 1000)
+var vol = 0.0;
+
+foreach (var opt in options)
+    if (Math.Abs(opt.Strike - 65000) < 1000)
     {
-        price = o.Price(DateTime.Now, 64300, sabrs[0]);
-        var i = 0;
+        spot = deribit.GetSpot(pair);
+        price = opt.Price(DateTime.Now, spot, btcVolSurface);
         break;
     }
 
-Console.WriteLine(options.Length);
+Console.WriteLine($"Spot: {spot} -> {price}");

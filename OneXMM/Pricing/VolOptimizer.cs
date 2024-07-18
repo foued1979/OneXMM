@@ -9,9 +9,9 @@ namespace OneXMM.Pricing
 
     internal static class VolOptimizer
     {
-        public static MinimizationResult CalibrateSmile(double fwd, SABR smile, SortedDictionary<Option, double> options)
+        public static MinimizationResult CalibrateSmile(double spot, double fwd, SABR smile, SortedDictionary<Option, double> options)
         {
-            var simplex = new NelderMeadSimplex(1E-5, 300);
+            var simplex = new NelderMeadSimplex(1E-5, 1500);
             var initialGuess = new DenseVector(4);
 
             initialGuess[0] = 0.6;
@@ -26,12 +26,13 @@ namespace OneXMM.Pricing
             initialBump[2] = 0.01;
             initialBump[3] = 0.005;
 
-            return simplex.FindMinimum(new VolObjectiveFunction(smile.SmileDate, fwd, smile, options, initialGuess), initialGuess, initialBump);
+            return simplex.FindMinimum(new VolObjectiveFunction(smile.SmileDate, spot, fwd, smile, options, initialGuess), initialGuess, initialBump);
         }
 
         private class VolObjectiveFunction : IObjectiveFunction
         {
             private readonly DateTime _asof;
+            private readonly double _spot;
             private readonly double _fwd;
             private readonly SABR _smile;
             private readonly SortedDictionary<Option, double> _options;
@@ -49,21 +50,19 @@ namespace OneXMM.Pricing
 
             public Matrix<double> Hessian => throw new NotImplementedException();
 
-            public VolObjectiveFunction(DateTime asof, double fwd, SABR smile, SortedDictionary<Option, double> options, Vector<double> initialGuess)
+            public VolObjectiveFunction(DateTime asof, double spot, double fwd, SABR smile, SortedDictionary<Option, double> options, Vector<double> initialGuess)
             {
                 _asof = asof;
+                _spot = spot;
                 _fwd = fwd;
                 _smile = smile;
                 _options = options;
                 _initGuess = initialGuess;
-
-                // Compute the gradient
-                //Gradient = ComputeGradient(asof, fwd, smile, options, initialGuess);
             }
 
             public IObjectiveFunction CreateNew()
             {
-                return new VolObjectiveFunction(_asof, _fwd, _smile, _options, _initGuess);
+                return new VolObjectiveFunction(_asof, _spot, _fwd, _smile, _options, _initGuess);
             }
 
             public void EvaluateAt(Vector<double> point)
@@ -77,7 +76,7 @@ namespace OneXMM.Pricing
 
                 foreach (var option in _options)
                 {
-                    var err = GetError(_asof, option, _fwd, _smile);
+                    var err = GetError(_asof, option, _spot, _fwd, _smile);
                     Value += err * err;
                 }
             }
@@ -87,7 +86,7 @@ namespace OneXMM.Pricing
                 throw new NotImplementedException();
             }
 
-            private static Vector<double> ComputeGradient(DateTime asof, double fwd, SABR smile, SortedDictionary<Option, double> options, Vector<double> initialGuess)
+            private static Vector<double> ComputeGradient(DateTime asof, double spot, double fwd, SABR smile, SortedDictionary<Option, double> options, Vector<double> initialGuess)
             {
                 var res = new DenseVector(initialGuess.Count);
 
@@ -102,7 +101,7 @@ namespace OneXMM.Pricing
 
                     foreach (var option in options)
                     {
-                        var err = GetError(asof, option, fwd, smile);
+                        var err = GetError(asof, option, spot, fwd, smile);
                         totalErrUp += err * err;
                     }
 
@@ -112,7 +111,7 @@ namespace OneXMM.Pricing
 
                     foreach (var option in options)
                     {
-                        var err = GetError(asof, option, fwd, smile);
+                        var err = GetError(asof, option, spot, fwd, smile);
                         totalErrDn += err * err;
                     }
 
@@ -122,9 +121,9 @@ namespace OneXMM.Pricing
                 return res;
             }
 
-            private static double GetError(DateTime asof, KeyValuePair<Option, double> option, double fwd, SABR smile)
+            private static double GetError(DateTime asof, KeyValuePair<Option, double> option, double spot, double fwd, SABR smile)
             {
-                return option.Key.Price(asof, fwd, smile) - option.Value;
+                return option.Key.Price(asof, spot, fwd, smile) - option.Value;
             }
         }
     }

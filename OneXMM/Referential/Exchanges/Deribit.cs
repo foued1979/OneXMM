@@ -11,6 +11,9 @@ namespace OneXMM.Referential.Exchanges
         private const string Secret = "VaOUj5y2JsBotBNaqpFy7YF3I-_5SfR8_-RVaYJkX8o";
         private readonly string _connectionToken;
 
+        public override bool QuoteInBase => false;
+        public override bool IsDiscounted => true;
+
         public Deribit(bool isTestMode) : base(OneXMM.Exchanges.Deribit, isTestMode)
         {
             if (!isTestMode)
@@ -25,12 +28,18 @@ namespace OneXMM.Referential.Exchanges
         }
         public override Option[] LoadOptions(string symbol)
         {
+            //if (Config.AllOptions.TryGetValue(OneXMM.Exchanges.Deribit, out var deribitOptions) && deribitOptions.IsUpToDate) return deribitOptions.Options;
+
             var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_instruments?currency={symbol}&expired=false&kind=option");
 
             var response = _httpClient.SendAsync(request);
             var optionDef = Utils.Utils.ConvertJsonToObject<DeribitGetInstruments>(response.ConfigureAwait(false).GetAwaiter().GetResult().Content.ReadAsStream());
             if (optionDef is null || optionDef.testnet != IsTestMode) throw new Exception("Issue loading options from Deribit.");
-            return optionDef.result.Select(o => (Option)o).Where(o => o.OptionType == OptionTypes.Put).ToArray();
+            var options =  optionDef.result.Select(o => (Option)o).Where(o => o.OptionType == OptionTypes.Put).ToArray();
+
+            //Config.StoredOptions.UpdateOptions(OneXMM.Exchanges.Deribit, Cutoff, options);
+
+            return options;
         }
 
         public override Futures[] LoadFutures(string symbol)

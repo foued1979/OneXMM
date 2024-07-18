@@ -22,7 +22,7 @@ namespace OneXMM.Referential.Exchanges.Responses
                 exchange,
                 optionDef.instrument_name,
                 Config.RefData.GetPair(optionDef.base_currency, optionDef.counter_currency) ?? throw new Exception($"Unknown pair {optionDef.base_currency}/{optionDef.counter_currency} for option on {exchange.Name}."),
-                optionDef.option_type.Equals("Call") ? OptionTypes.Call : OptionTypes.Put,
+                optionDef.option_type.ToLower().Equals("call") ? OptionTypes.Call : OptionTypes.Put,
                 optionDef.strike,
                 (exchange as Deribit)!.OptionNameToExpiry(optionDef.instrument_name));
         }

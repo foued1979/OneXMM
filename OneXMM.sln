@@ -10,6 +10,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configuration", "Configuration", "{BF3D51BD-F073-4258-ADAD-D3A235F0C9ED}"
 	ProjectSection(SolutionItems) = preProject
 		OneXMM\Configuration\Settings.json = OneXMM\Configuration\Settings.json
+		OneXMM\Configuration\StoredFutures.json = OneXMM\Configuration\StoredFutures.json
+		OneXMM\Configuration\StoredOptions.json = OneXMM\Configuration\StoredOptions.json
 	EndProjectSection
 EndProject
 Global

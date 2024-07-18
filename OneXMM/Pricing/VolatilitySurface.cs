@@ -7,6 +7,7 @@ namespace OneXMM.Pricing
     using OneXMM.Utils;
     using OneXMM.Interfaces;
     using MathNet.Numerics.Optimization;
+    using Org.BouncyCastle.Bcpg.Sig;
 
     public class VolatilitySurface
     {
@@ -28,7 +29,6 @@ namespace OneXMM.Pricing
 
         public SABR[] Calibrate(VolUpdateTempos updateTempo)
         {
-            var spot = Exchange.GetSpot(Pair);
             var smiles = new Dictionary<DateTime, SABR>(_smiles.Count);
             var now = DateTime.Now;
 
@@ -64,48 +64,55 @@ namespace OneXMM.Pricing
                     break;
                 default:
                     throw new NotImplementedException($"Unknown tempo {updateTempo} for calibration.");
-
             }
+
+            // We get futures prices and we compute the Yields
+            var futures = GetFutures(smiles);
+            var spot = Exchange.GetSpot(Pair);
+            var futuresTimestamp = DateTime.Now;
+            UpdateFuturesPrices(spot, futuresTimestamp, futures, Exchange);
 
             var SABRToCalibrate = new Dictionary<SABR, Option[]>(smiles.Count);
 
             for (int i = 0; i < smiles.Count; ++i)
             {
                 var smile = smiles.Values.ElementAt(i);
-                SABRToCalibrate.Add(smile, smile.Options.SelectOptions(spot));
+                SABRToCalibrate.Add(smile, smile.Options.SelectOptions(GetForward(spot, futuresTimestamp, smile.SmileExpiry)));
             }
 
             var calibrationTasks = new Task<MinimizationResult>[SABRToCalibrate.Count];
             var prices = new SortedDictionary<Option, double>[SABRToCalibrate.Count];
             var result = new SABR[SABRToCalibrate.Count];
 
+            spot = Exchange.GetSpot(Pair);
+            var calibrationTimestamp = DateTime.Now;
+            Thread.Sleep(1000);
+
             for (int i = 0; i < SABRToCalibrate.Count; ++i)
             {
                 var index = i;
 
                 var elementsToCalibrate = SABRToCalibrate.ElementAt(i).Value;
-                var forward = Exchange.GetInterpolatedForward(elementsToCalibrate.First().Expiry, _futures);
-                Thread.Sleep(1000);
+                var forward = GetForward(spot, calibrationTimestamp, SABRToCalibrate.Keys.ElementAt(i).SmileExpiry);
 
+                var stopTime = DateTime.Now.AddSeconds(1);
                 prices[index] = Exchange.GetOptionPrices(elementsToCalibrate);
 
-                var min = VolOptimizer.CalibrateSmile(forward, SABRToCalibrate.ElementAt(index).Key, prices[index]).MinimizingPoint;
-                result[i] = SABRToCalibrate.ElementAt(i).Key.WithParameters(min[0], min[1], min[2], min[3]);
-                //calibrationTasks[index] = Task<MinimizationResult>.Run(() =>
-                //{
-                //    return VolOptimizer.CalibrateSmile(forward, SABRToCalibrate.ElementAt(index).Key, prices[index]);
-                //});
+                calibrationTasks[index] = Task<MinimizationResult>.Run(() =>
+                {
+                    return VolOptimizer.CalibrateSmile(spot, forward, SABRToCalibrate.ElementAt(index).Key, prices[index]);
+                });
 
-                Thread.Sleep(1000);
+                while (DateTime.Now.CompareTo(stopTime) < 0) ;
             }
 
-            //Task.WaitAll(calibrationTasks);
-            
-            //for (int i = 0; i < SABRToCalibrate.Count; ++i)
-            //{
-            //    var parameters = calibrationTasks[i].Result.MinimizingPoint;
-            //    result[i] = SABRToCalibrate.ElementAt(i).Key.WithParameters(parameters[0], parameters[1], parameters[2], parameters[3]);
-            //}
+            Task.WaitAll(calibrationTasks);
+
+            for (int i = 0; i < SABRToCalibrate.Count; ++i)
+            {
+                var parameters = calibrationTasks[i].Result.MinimizingPoint;
+                result[i] = SABRToCalibrate.ElementAt(i).Key.WithParameters(parameters[0], parameters[1], parameters[2], parameters[3]);
+            }
 
             return result;
         }
@@ -172,7 +179,8 @@ namespace OneXMM.Pricing
                     var tenorUp = (_futures.ElementAt(i).Key - asof).TotalDays / 365.0;
                     var yieldUp = _futures.ElementAt(i).Value.Yield;
 
-                    return yieldDown + (yf - tenorDown) / (tenorUp - tenorDown) * (yieldUp - yieldDown);
+                    var yield = yieldDown + (yf - tenorDown) / (tenorUp - tenorDown) * (yieldUp - yieldDown);
+                    return spot * (1 + yield * yf);
                 }
             }
 
@@ -214,6 +222,89 @@ namespace OneXMM.Pricing
             }
 
             return _smiles.Last().Value.GetVol(forward, strike);
+        }
+
+        private SortedDictionary<DateTime, Futures> GetFutures(Dictionary<DateTime, SABR> smiles)
+        {
+            var res = new SortedDictionary<DateTime, Futures>();
+
+            foreach (var smile in smiles)
+            {
+                if (_futures.ContainsKey(smile.Key)) res.Add(smile.Key, _futures[smile.Key]);
+                else
+                {
+                    var index = 0;
+                    while (_futures.ElementAt(index).Value.Expiry.CompareTo(smile.Key) < 0) index++;
+
+                    var fut = _futures.ElementAt(index - 1);
+                    res.TryAdd(fut.Key, fut.Value);
+
+                    fut = _futures.ElementAt(index);
+                    res.TryAdd(fut.Key, fut.Value);
+                }
+            }
+
+            return res;
+        }
+
+        private static void UpdateFuturesPrices(double spot, DateTime asof, SortedDictionary<DateTime, Futures> futures, IExchange exchange)
+        {
+            if (futures.Count <= 4)
+            {
+                var futuresPriceTasks = new List<Task>(4);
+                for (int i = 0; i < futures.Count; i++)
+                {
+                    int index = i;
+                    futuresPriceTasks.Add(Task.Run(() =>
+                    {
+                        var fut = futures.ElementAt(index).Value;
+                        var price = exchange.GetSpot(fut);
+                        fut.SetYield(asof, spot, price);
+                    }));
+                }
+
+                Task.WaitAll(futuresPriceTasks.ToArray());
+                Thread.Sleep(1000);
+            }
+            else
+            {
+                var futuresPriceTasks = new List<Task>(4);
+                var endTime = DateTime.Now.AddSeconds(1);
+
+                for (int i = 0; i < 4; i++)
+                {
+                    int index = i;
+                    futuresPriceTasks.Add(Task.Run(() =>
+                    {
+                        var fut = futures.ElementAt(index).Value;
+                        var price = exchange.GetSpot(fut);
+                        fut.SetYield(asof, spot, price);
+                    }));
+                }
+                Task.WaitAll(futuresPriceTasks.ToArray());
+                while (DateTime.Now.CompareTo(endTime) <= 0) ;
+
+                for (int j = 4; j < futures.Count; j += 5)
+                {
+                    futuresPriceTasks = new List<Task>(5);
+                    endTime = DateTime.Now.AddSeconds(1);
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        int index = j + i;
+
+                        futuresPriceTasks.Add(Task.Run(() =>
+                        {
+                            var fut = futures.ElementAt(index).Value;
+                            var price = exchange.GetSpot(fut);
+                            fut.SetYield(asof, spot, price);
+                        }));
+                    }
+
+                    Task.WaitAll(futuresPriceTasks.ToArray());
+                    while (DateTime.Now.CompareTo(endTime) <= 0) ;
+                }
+            }
         }
     }
 }

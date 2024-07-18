@@ -7,6 +7,10 @@ namespace OneXMM.Interfaces
 
     public interface IExchange
     {
+        bool QuoteInBase { get; }
+
+        bool IsDiscounted { get; }
+
         Option[] LoadOptions(string symbol);
 
         Futures[] LoadFutures(string symbol);

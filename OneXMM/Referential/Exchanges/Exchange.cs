@@ -17,6 +17,8 @@ namespace OneXMM.Referential.Exchanges
         public string Name { get; }
         public bool IsTestMode { get; }
         public TimeSpan Cutoff { get; }
+        public abstract bool QuoteInBase { get; }
+        public abstract bool IsDiscounted { get; }
 
         public Exchange(OneXMM.Exchanges exchange, bool isTestMode) 
         {
@@ -44,24 +46,48 @@ namespace OneXMM.Referential.Exchanges
 
         public double GetInterpolatedForward(DateTime maturity, SortedDictionary<DateTime, Futures> futures)
         {
+            var spot = GetSpot(futures.First().Value.Pair);
+
             if (maturity.CompareTo(futures.First().Key) <= 0)
             {
-                return GetSpot(futures.First().Value);
+                var fut = futures.First().Value;
+                var futPrice = GetSpot(fut);
+                fut.SetYield(DateTime.Now, spot, futPrice);
+                return futPrice;
             }
             else if (maturity.CompareTo(futures.Last().Key) >= 0)
             {
-                return GetSpot(futures.Last().Value);
+                var fut = futures.Last().Value;
+                var futPrice = GetSpot(fut);
+                fut.SetYield(DateTime.Now, spot, futPrice);
+                return futPrice;
             }
 
             int i = 1;
             var compare = 0.0;
 
             for (i = 1; i < futures.Count; i++) if ((compare = maturity.CompareTo(futures.ElementAt(i).Key)) <= 0) break;
-            if (compare == 0.0) return GetSpot(futures.ElementAt(i).Value);
+            if (compare == 0.0)
+            {
+                var fut = futures.ElementAt(i).Value;
+                var futPrice = GetSpot(fut);
+                fut.SetYield(DateTime.Now, spot, futPrice);
+                return futPrice;
+            }
 
             var getSpotTasks = new Task<double>[3];
-            getSpotTasks[0] = Task<double>.Run(() => GetSpot(futures.ElementAt(i - 1).Value));
-            getSpotTasks[1] = Task<double>.Run(() => GetSpot(futures.ElementAt(i).Value));
+            getSpotTasks[0] = Task<double>.Run(() => {
+                var fut = futures.ElementAt(i - 1).Value;
+                var futPrice = GetSpot(fut);
+                fut.SetYield(DateTime.Now, spot, futPrice);
+                return futPrice;
+            });
+            getSpotTasks[1] = Task<double>.Run(() => {
+                var fut = futures.ElementAt(i).Value;
+                var futPrice = GetSpot(fut);
+                fut.SetYield(DateTime.Now, spot, futPrice);
+                return futPrice;
+            });
             getSpotTasks[2] = Task<double>.Run(() =>
             {
                 var prop = (maturity - futures.ElementAt(i - 1).Value.Expiry).TotalDays * Constants.OneOver365;
@@ -70,6 +96,7 @@ namespace OneXMM.Referential.Exchanges
             });
 
             Task.WaitAll(getSpotTasks);
+
 
             return getSpotTasks[0].Result + getSpotTasks[2].Result * (getSpotTasks[1].Result - getSpotTasks[0].Result);
         }
