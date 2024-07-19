@@ -5,36 +5,21 @@ using OneXMM.Referential;
 using OneXMM.Referential.Exchanges;
 using System.Diagnostics;
 
+
+var surface = Factory.GetVolatilitySurface(new DateTime(2024, 7, 19, 18, 0, 0, DateTimeKind.Local));
+
 var pair = Config.RefData.GetPair("BTC", "USD");
 var deribit = Factory.CreateExchange(Exchanges.Deribit, false);
-var options = deribit.LoadOptions("BTC");
-var futures = deribit.LoadFutures("BTC");
+var pricingTime = new DateTime(2024, 7, 20, 16, 0, 0, DateTimeKind.Local);
 
-//var d = DateTime.Now;
-//var exp = d.AddDays(2);
-//var sabr = new SABR(d, exp);
-//sabr.WithParameters(0.6, 0.4, 0.8, 0.1);
+var res = FixingFinder.FindFixing(pricingTime, deribit, surface, PoolMaturities.TwoWeeks);
+Console.WriteLine(res);
 
-//var forward = 103;
-//var strike = 105;
-//var option = new Option(0, deribit as Exchange, "test", pair, OptionTypes.Call, strike, exp.ToString("ddMMMyy"));
+//var options = deribit.LoadOptions("BTC");
+//var futures = deribit.LoadFutures("BTC");
 
-//var price = option.Price(d, forward, sabr);
-//Debug.WriteLine(sabr.GetVol(forward, strike));
-//Debug.WriteLine(price);
-var btcVolSurface = Factory.CreateVolSurface(DateTime.Now, pair, deribit, futures, options);
-var sabrs = btcVolSurface.Calibrate(VolUpdateTempos.OneHour);
+//var btcVolSurfaceBuilder = Factory.CreateVolSurfaceBuilder(DateTime.Now, pair, deribit, futures, options);
+//btcVolSurfaceBuilder.Calibrate(VolUpdateTempos.TwoHours);
 
-var spot = 0.0;
-var price = 0.0;
-var vol = 0.0;
-
-foreach (var opt in options)
-    if (Math.Abs(opt.Strike - 65000) < 1000)
-    {
-        spot = deribit.GetSpot(pair);
-        price = opt.Price(DateTime.Now, spot, btcVolSurface);
-        break;
-    }
-
-Console.WriteLine($"Spot: {spot} -> {price}");
+//var surface = btcVolSurfaceBuilder as VolatilitySurface;
+//surface.Serialize();

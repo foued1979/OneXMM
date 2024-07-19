@@ -2,6 +2,7 @@
 
 namespace OneXMM.Referential
 {
+    using OneXMM.Interfaces;
     using OneXMM.Pricing;
     using OneXMM.Referential.Exchanges;
 
@@ -15,7 +16,16 @@ namespace OneXMM.Referential
         public double Strike { get; }
         public DateTime Expiry { get; }
 
-        public Option() { }
+        public Option(IExchange exchange, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry) 
+        {
+            Id = -1;
+            Symbol = "Custom";
+            Exchange = exchange as Exchange;
+            Pair = pair;
+            OptionType = optionType;
+            Strike = strike;
+            Expiry = expiry;
+        }
 
         public Option(int id, Exchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, string expiry)
         {
@@ -33,8 +43,6 @@ namespace OneXMM.Referential
             var expiry = (Expiry - volSurface.SurfaceDate).TotalDays * Constants.OneOver365;
             var forward = volSurface.GetForward(spot, asof, Expiry);
             var vol = volSurface.GetVol(forward, Strike, Expiry);
-
-            Console.WriteLine($"Vol: {vol}");
 
             var volSqrtT = vol * System.Math.Sqrt(expiry);
             var d1 = System.Math.Log(forward / Strike) / volSqrtT + 0.5 * volSqrtT;

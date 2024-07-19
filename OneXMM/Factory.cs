@@ -23,17 +23,30 @@ namespace OneXMM
             }
         }
 
-        public static VolatilitySurface CreateVolSurface(DateTime asof, Pair pair, IExchange exchange, Futures[] futures, Option[] options)
+        public static VolatilitySurface? GetVolatilitySurface(DateTime asof)
         {
-            var newSurface = new VolatilitySurface(asof, pair, exchange);
+            var surfaceDate = new DateTime(asof.Year, asof.Month, asof.Day, asof.ToUniversalTime().Hour, 0, 0, DateTimeKind.Utc);
+            var path = Path.Combine(Environment.CurrentDirectory, $"Configuration\\VolSurface_{surfaceDate.ToString("dd-MM-yyyyTHH_mm_ss")}.json");
+
+            if (File.Exists(path))
+            {
+                return Utils.Utils.ConvertFileToObject<VolatilitySurface>(path, "dd-MM-yyyyTHH:mm:ss");
+            }
+
+            return null;
+        }
+
+        public static VolatilitySurfaceBuilder CreateVolSurfaceBuilder(DateTime asof, Pair pair, IExchange exchange, Futures[] futures, Option[] options)
+        {
+            var newSurfaceBuilder = new VolatilitySurfaceBuilder(asof, pair, exchange);
 
             var fillTasks = new Task[2];
 
-            fillTasks[0] = Task.Run(() => { foreach (var option in options) if (option.Pair.Equals(pair)) newSurface.AddOption(option); });
-            fillTasks[1] = Task.Run(() => { foreach (var future in futures) if (future.Pair.Equals(pair)) newSurface.AddFutures(future); });
+            fillTasks[0] = Task.Run(() => { foreach (var option in options) if (option.Pair.Equals(pair)) newSurfaceBuilder.AddOption(option); });
+            fillTasks[1] = Task.Run(() => { foreach (var future in futures) if (future.Pair.Equals(pair)) newSurfaceBuilder.AddFutures(future); });
 
             Task.WaitAll(fillTasks);
-            return newSurface;
+            return newSurfaceBuilder;
         }
     }
 }

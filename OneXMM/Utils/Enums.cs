@@ -13,5 +13,17 @@ namespace OneXMM.Utils
         {
             return (typeof(TEnum).GetField(e.ToString())?.GetCustomAttribute(typeof(TAttr)) as TAttr) ?? default(TAttr);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static VolUpdateTempos ToVolUpdateTempo(this PoolMaturities matu)
+        {
+            switch (matu)
+            {
+                case PoolMaturities.OneDay: return VolUpdateTempos.OneHour;
+                case PoolMaturities.OneWeek: return VolUpdateTempos.TwoHours;
+                case PoolMaturities.TwoWeeks: return VolUpdateTempos.TwoHours;
+                default: return VolUpdateTempos.FourHours;
+            }
+        }
     }
 }

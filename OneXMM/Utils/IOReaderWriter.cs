@@ -4,6 +4,26 @@ namespace OneXMM.Utils
 {
     internal static partial class Utils
     {
+        public static void Serialize<T>(T objectToSerialize, string filePath, string dateTimeFormat = "") where T : class
+        {
+            using (var file = File.OpenWrite(filePath))
+            using (var streamWriter = new StreamWriter(file))
+            using (var jsonWriter = new Newtonsoft.Json.JsonTextWriter(streamWriter))
+            {
+                var serializer = new Newtonsoft.Json.JsonSerializer();
+                if (!string.IsNullOrEmpty(dateTimeFormat)) serializer.DateFormatString = dateTimeFormat;
+
+                try
+                {
+                    serializer.Serialize(jsonWriter, objectToSerialize);
+                }
+                catch
+                {
+                    throw new Exception($"Cannot serialize object type {typeof(T).Name}.");
+                }
+            }
+        }
+
         public static T? ConvertFileToObject<T>(string filePath, string dateTimeFormat = "") where T : class
         {
             using (var file = File.OpenRead(filePath))

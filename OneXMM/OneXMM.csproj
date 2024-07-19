@@ -9,19 +9,11 @@
   <ItemGroup>
     <None Remove="Configuration\Referential.json" />
     <None Remove="Configuration\Settings.json" />
-    <None Remove="Configuration\StoredFutures.json" />
-    <None Remove="Configuration\StoredOptions.json" />
     <None Remove="Resources\XMM_Abi.json" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Configuration\Settings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Configuration\StoredFutures.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Configuration\StoredOptions.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

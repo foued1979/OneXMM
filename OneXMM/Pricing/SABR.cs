@@ -8,28 +8,23 @@ namespace OneXMM.Pricing
 
     public sealed class SABR
     {
-        private double tenor;
-        private double fmid;
-        private double g1;
-        private double g2;
-
         public DateTime SmileDate { get; }
         public DateTime SmileExpiry { get; }
         
-        public double Alpha { get; private set; }
-        public double Vega { get; private set; }
-        public double Beta { get; private set; }
-        public double Rho { get; private set; }
+        public double Alpha { get; set; }
+        public double Vega { get; set; }
+        public double Beta { get; set; }
+        public double Rho { get; set; }
 
-        public SortedDictionary<string, Option> _optionsBySymbol { get; private set; } = new SortedDictionary<string, Option>();
-        public SortedDictionary<double, Option> Options { get; private set; } = new SortedDictionary<double, Option>();
+        private SortedDictionary<string, Option> _optionsBySymbol = new SortedDictionary<string, Option>();
+        private SortedDictionary<double, Option> _options = new SortedDictionary<double, Option>();
+
+        public SortedDictionary<double, Option> GetOptions() => _options;
 
         public SABR(DateTime smileDate, DateTime smileExpiry)
         {
             SmileDate = smileDate;
             SmileExpiry = smileExpiry;
-
-            tenor = (smileExpiry - smileDate).TotalDays * Constants.OneOver365;
         }
 
         public SABR WithParameters(double alpha, double vega, double beta, double rho)
@@ -46,16 +41,17 @@ namespace OneXMM.Pricing
         {
             if (option.Expiry.CompareTo(SmileExpiry) != 0) throw new Exception($"Wrong option attached to SABR smile for {option.Pair.Symbol}.");
 
-            lock (Options)
+            lock (_options)
             {
-                if (Options.ContainsKey(option.Strike)) return;
-                Options.Add(option.Strike, option);
+                if (_options.ContainsKey(option.Strike)) return;
+                _options.Add(option.Strike, option);
                 _optionsBySymbol.Add(option.Symbol, option);
             }
         }
 
         public double GetVol(double forward, double strike)
         {
+            var tenor = (SmileExpiry - SmileDate).TotalDays * Constants.OneOver365;
             if (forward == 0 || strike == 0) return double.NaN;
 
             var ln = Math.Log(forward / strike);
@@ -77,8 +73,7 @@ namespace OneXMM.Pricing
 
             return f2 * e / Xsi(Rho, e) * (1 + f3 * tenor);
         }
-        // alpha is sigma0
-        // Vega is alpha
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double cf(double f, double k, double Beta)
         {
