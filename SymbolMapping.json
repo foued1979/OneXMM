@@ -1,0 +1,12 @@
+{
+  "OptionSymbolMapping": {
+    "Deribit": {
+      "BTC/USDT": "btc_usd"
+    }
+  },
+  "FuturesSymbolMapping": {
+    "Deribit": {
+
+    }
+  }
+}

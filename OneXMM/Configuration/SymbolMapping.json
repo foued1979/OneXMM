@@ -1,0 +1,15 @@
+{
+  "Mapping": {
+    "BTC/USDT": {
+      "Option": {
+        "Deribit": "btc_usd"
+      },
+      "Future": {
+        "Deribit": "btc_usd"
+      },
+      "Index": {
+        "Deribit": "btc_usd"
+      }
+    }
+  }
+}

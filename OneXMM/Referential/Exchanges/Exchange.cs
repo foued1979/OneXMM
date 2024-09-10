@@ -6,13 +6,16 @@ namespace OneXMM.Referential.Exchanges
     using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
+    using System.Net.WebSockets;
 
-    public abstract class Exchange : IExchange
+    public abstract class Exchange : IExchange, IDisposable
     {
         private bool _isReadingRequests;
+        protected int _reqId;
 
         protected ExchangeConfig _config;
         protected readonly HttpClient _httpClient;
+        protected readonly ClientWebSocket _wsClient;
 
         public string Name { get; }
         public bool IsTestMode { get; }
@@ -28,15 +31,19 @@ namespace OneXMM.Referential.Exchanges
             Cutoff = _config.Cutoff.ToTimeSpan();
             
 
-            var uri = (isTestMode ? _config.TestUri : _config.ProdUri).TrimEnd('/');
+            var rpcUri = (isTestMode ? _config.TestRPCUri : _config.ProdRPCUri).TrimEnd('/');
+            var wsUri = (isTestMode ? _config.TestWsUri : _config.ProdWsUri).TrimEnd('/');
             _httpClient = new HttpClient();
-            _httpClient.BaseAddress = new Uri($"https://{uri}");
+            _httpClient.BaseAddress = new Uri(rpcUri);
             _httpClient.DefaultRequestHeaders.Add("jsonrpc", "2.0");
+
+            _wsClient = new ClientWebSocket();
+            _wsClient.ConnectAsync(new Uri(wsUri), default).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        public abstract Option[] LoadOptions(string symbol);
+        public abstract Option[] LoadOptions(Pair pair);
 
-        public abstract Futures[] LoadFutures(string symbol);
+        public abstract Futures[] LoadFutures(Pair pair);
 
         public abstract double GetSpot(Pair pair);
 
@@ -101,11 +108,20 @@ namespace OneXMM.Referential.Exchanges
             return getSpotTasks[0].Result + getSpotTasks[2].Result * (getSpotTasks[1].Result - getSpotTasks[0].Result);
         }
 
-        public abstract SortedDictionary<Option, double> GetOptionPrices(Option[] options);
+        public abstract SortedDictionary<Option, double> GetOptionPrices(Pair pair);
 
         public DateTime ToExpiry(string expiryStr)
         {
-            return DateTime.ParseExact(expiryStr, _config.ExpiryFormat, null).Add(Cutoff).ToLocalTime();
+            return DateTime.ParseExact(expiryStr, _config.ExpiryFormat, null).Add(Cutoff);
         }
+
+        public void Dispose()
+        {
+            _httpClient.Dispose();
+            _wsClient.CloseAsync(WebSocketCloseStatus.NormalClosure, "", default).ConfigureAwait(false).GetAwaiter().GetResult();
+            _wsClient.Dispose();
+        }
+
+        protected abstract void Authenticate(bool isTestMode);
     }
 }

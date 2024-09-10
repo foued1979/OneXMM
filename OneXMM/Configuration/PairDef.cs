@@ -6,7 +6,5 @@ namespace OneXMM.Configuration
     {
         public string Coin { get; set; } = "";
         public string Base { get; set; } = "";
-
-        public Dictionary<Exchanges, string> ExchangeSymbols { get; set; } = new Dictionary<Exchanges, string>();
     }
 }

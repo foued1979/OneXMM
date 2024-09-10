@@ -4,10 +4,14 @@ namespace OneXMM.Referential
 {
     using OneXMM.Interfaces;
     using OneXMM.Pricing;
+    using OneXMM.Referential.Assets;
     using OneXMM.Referential.Exchanges;
 
     public sealed class Option : IComparable<Option>
     {
+        public static Option CreateOption(Exchange exchange, string symbol, Pair pair, OptionTypes optionType, double strike, DateTime expiry)
+            => new Option(exchange, symbol, pair, optionType, strike, expiry);
+
         public int Id { get; set; }
         public Exchange Exchange { get; set; }
         public string Symbol { get; set; }
@@ -15,6 +19,9 @@ namespace OneXMM.Referential
         public OptionTypes OptionType { get; set; }
         public double Strike { get; }
         public DateTime Expiry { get; }
+
+        private Option(IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
+            : this(exchange, pair, optionType, strike, expiry) { Id = -1; Symbol = symbol; }
 
         public Option(IExchange exchange, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry) 
         {

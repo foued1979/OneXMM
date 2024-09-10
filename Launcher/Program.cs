@@ -1,9 +1,5 @@
 ﻿using OneXMM;
-using OneXMM.Factories;
 using OneXMM.Pricing;
-using OneXMM.Referential;
-using OneXMM.Referential.Exchanges;
-using System.Diagnostics;
 
 
 var surface = Factory.GetVolatilitySurface(new DateTime(2024, 7, 19, 18, 0, 0, DateTimeKind.Local));

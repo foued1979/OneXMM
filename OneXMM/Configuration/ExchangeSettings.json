@@ -1,0 +1,13 @@
+{
+  "Exchanges": {
+    "Deribit": {
+      "ExchangeName": "DERIBIT",
+      "TestRPCUri": "https://test.deribit.com/api/v2",
+      "ProdRPCUri": "http://www.deribit.com/api/v2",
+      "TestWsUri": "wss://test.deribit.com/api/v2",
+      "ProdWsUri": "wss://www.deribit.com/api/v2",
+      "Cutoff": "08H00",
+      "ExpiryFormat": "ddMMMyy"
+    }
+  }
+}

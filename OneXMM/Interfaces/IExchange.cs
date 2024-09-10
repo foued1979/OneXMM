@@ -11,9 +11,9 @@ namespace OneXMM.Interfaces
 
         bool IsDiscounted { get; }
 
-        Option[] LoadOptions(string symbol);
+        Option[] LoadOptions(Pair pair);
 
-        Futures[] LoadFutures(string symbol);
+        Futures[] LoadFutures(Pair pair);
 
         double GetSpot(Pair pair);
 
@@ -23,6 +23,6 @@ namespace OneXMM.Interfaces
 
         double GetInterpolatedForward(DateTime maturity, SortedDictionary<DateTime, Futures> futures);
 
-        public SortedDictionary<Option, double> GetOptionPrices(Option[] options);
+        public SortedDictionary<Option, double> GetOptionPrices(Pair pair);
     }
 }

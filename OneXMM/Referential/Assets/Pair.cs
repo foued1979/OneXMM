@@ -2,18 +2,26 @@
 
 namespace OneXMM.Referential.Assets
 {
+    using OneXMM;
+
     public sealed class Pair
     {
         public string Symbol => $"{Coin.Symbol}/{Base.Symbol}";
         public Coin Coin { get; }
         public Coin Base { get; }
-        public Dictionary<OneXMM.Exchanges, string> ExchangeSymbols { get; }
+        public Dictionary<SymbolTypes, Dictionary<Exchanges, string>> MappingExchangeSymbols { get; }
 
-        public Pair(Coin coin, Coin cBase, Dictionary<OneXMM.Exchanges, string> exchangeSymbols)
+        public Pair(Coin coin, Coin counter, Dictionary<SymbolTypes, Dictionary<Exchanges, string>> mappingExchangeSymbols)
         {
             Coin = coin;
-            Base = cBase;
-            ExchangeSymbols = exchangeSymbols;
+            Base = counter;
+            MappingExchangeSymbols = mappingExchangeSymbols;
+        }
+
+        public string GetSymbol(SymbolTypes symbolType, Exchanges exchange)
+        {
+            if (MappingExchangeSymbols.TryGetValue(symbolType, out var symbByExchange) && symbByExchange.TryGetValue(exchange, out var symbol)) return symbol;
+            return string.Empty;
         }
 
         public override bool Equals(object? obj)

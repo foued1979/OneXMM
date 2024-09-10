@@ -20,17 +20,11 @@
   "PairDefs": [
     {
       "Coin": "BTC",
-      "Base": "USDT",
-      "ExchangeSymbols": {
-        "Deribit": "BTC_USDT"
-      }
+      "Base": "USDT"
     },
     {
       "Coin": "ETH",
-      "Base": "USDT",
-      "ExchangeSymbols": {
-        "Deribit": "ETH_USDT"
-      }
+      "Base": "USDT"
     }
   ]
 }

@@ -7,13 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Configuration\ExchangeSettings.json" />
     <None Remove="Configuration\Referential.json" />
-    <None Remove="Configuration\Settings.json" />
+    <None Remove="Configuration\SymbolMapping.json" />
     <None Remove="Resources\XMM_Abi.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Configuration\Settings.json">
+    <Content Include="Configuration\ExchangeSettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Configuration\SymbolMapping.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
