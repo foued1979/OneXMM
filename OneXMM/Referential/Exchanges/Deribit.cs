@@ -26,19 +26,16 @@ namespace OneXMM.Referential.Exchanges
 
         public override Option[] LoadOptions(Pair pair)
         {
-            //if (Config.AllOptions.TryGetValue(OneXMM.Exchanges.Deribit, out var deribitOptions) && deribitOptions.IsUpToDate) return deribitOptions.Options;
-
             var symbol = pair.GetSymbol(SymbolTypes.Option, OneXMM.Exchanges.Deribit);
             if (string.IsNullOrEmpty(symbol)) throw new Exception($"Deribit - Option symbol missing for pair {pair.Symbol}.");
 
-            var request = new HttpRequestMessage(HttpMethod.Get, $"/public/get_instruments?currency={symbol}&expired=false&kind=option");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/v2/public/get_instruments?currency={symbol}&expired=false&kind=option");
 
-            var response = _httpClient.SendAsync(request);
-            var optionDef = Utils.ConvertJsonToObject<DeribitGetInstruments>(response.ConfigureAwait(false).GetAwaiter().GetResult().Content.ReadAsStream());
+            var response = _httpClient.SendAsync(request).ConfigureAwait(false).GetAwaiter().GetResult().Content;
+            var optionDef = Utils.ConvertJsonToObject<DeribitGetInstruments>(response.ReadAsStream());
+
             if (optionDef is null || optionDef.testnet != IsTestMode) throw new Exception("Issue loading options from Deribit.");
-            var options =  optionDef.result.Select(o => (Option)o).Where(o => o.OptionType == OptionTypes.Put).ToArray();
-
-            //Config.StoredOptions.UpdateOptions(OneXMM.Exchanges.Deribit, Cutoff, options);
+            var options =  optionDef.result.Select(o => DeribitInstrumentDef.ToOption(o, pair.Chain)).Where(o => o.OptionType == OptionTypes.Put).ToArray();
 
             return options;
         }
@@ -50,23 +47,30 @@ namespace OneXMM.Referential.Exchanges
 
             var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_instruments?currency={symbol}&expired=false&kind=future");
 
-            var response = _httpClient.SendAsync(request);
-            var futureDef = Utils.ConvertJsonToObject<DeribitGetInstruments>(response.ConfigureAwait(false).GetAwaiter().GetResult().Content.ReadAsStream());
+            var response = _httpClient.SendAsync(request).ConfigureAwait(false).GetAwaiter().GetResult().Content;
+            var futureDef = Utils.ConvertJsonToObject<DeribitGetInstruments>(response.ReadAsStream());
             if (futureDef is null || futureDef.testnet != IsTestMode) throw new Exception("Issue loading futures from Deribit.");
-            return futureDef.result.Where(f => !f.instrument_name.Contains("PERPETUAL")).Select(o => (Futures)o).ToArray();
+            return futureDef.result.Where(f => !f.instrument_name.Contains("PERPETUAL")).Select(o => DeribitInstrumentDef.ToFutures(o, pair.Chain)).ToArray();
         }
 
         public override double GetSpot(Pair pair)
         {
-            var symbol = pair.GetSymbol(SymbolTypes.Spot, OneXMM.Exchanges.Deribit);
+            var tickerType = SymbolTypes.Spot;
+            var symbol = pair.GetSymbol(tickerType, OneXMM.Exchanges.Deribit);
+            if (string.IsNullOrEmpty(symbol)) { tickerType = SymbolTypes.Index; symbol = pair.GetSymbol(tickerType, OneXMM.Exchanges.Deribit); }
             if (string.IsNullOrEmpty(symbol)) throw new Exception($"Deribit - Spot symbol missing for pair {pair.Symbol}.");
 
-            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book?depth=1&instrument_name={symbol}");
+            var request = tickerType == SymbolTypes.Spot
+                ? new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book?depth=1&instrument_name={symbol}")
+                : new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_index_price?index_name={symbol}");
 
-            var response = _httpClient.SendAsync(request);
-            var spotDef = Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.ConfigureAwait(false).GetAwaiter().GetResult().Content.ReadAsStream());
-            if (spotDef is null) throw new Exception("Issue loading futures from Deribit.");
-            return spotDef.result.Spot;
+            var response = _httpClient.SendAsync(request).ConfigureAwait(false).GetAwaiter().GetResult().Content;
+            var spotDef = tickerType == SymbolTypes.Spot
+                ? Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.ReadAsStream())?.result.Spot
+                : Utils.ConvertJsonToObject<DeribitGetIndex>(response.ReadAsStream())?.result.index_price;
+
+            if (!spotDef.HasValue) throw new Exception("Issue loading futures from Deribit.");
+            return spotDef.Value;
         }
 
         public override double GetSpot(Futures futures)
@@ -94,12 +98,17 @@ namespace OneXMM.Referential.Exchanges
             var res = new SortedDictionary<Option, double>();
 
             int reqId = _reqId++;
-            var cmd = $"{{\"method\":\"public/subscribe\",\"params\":{{\"channels\":[\"markprice.options.{pair.GetSymbol(SymbolTypes.Option, OneXMM.Exchanges.Deribit)}\"]}},\"jsonrpc\":\"2.0\",\"id\":{reqId}}}";
+
+            var undlSymbol = pair.GetSymbol(SymbolTypes.Spot, OneXMM.Exchanges.Deribit);
+            if (string.IsNullOrEmpty(undlSymbol)) undlSymbol = pair.GetSymbol(SymbolTypes.Index, OneXMM.Exchanges.Deribit);
+            if (string.IsNullOrEmpty(undlSymbol)) throw new NullReferenceException($"Deribit - No spot or index symbol for {pair.Symbol}.");
+
+            var cmd = $"{{\"method\":\"public/subscribe\",\"params\":{{\"channels\":[\"markprice.options.{undlSymbol}\"]}},\"jsonrpc\":\"2.0\",\"id\":{reqId}}}";
             WebsocketSend(cmd);
 
             while (!_optionsReceived) Thread.Sleep(25);
 
-            cmd = $"{{\"method\":\"public/unsubscribe\",\"params\":{{\"channels\":[\"markprice.options.{pair.GetSymbol(SymbolTypes.Option, OneXMM.Exchanges.Deribit)}\"]}},\"jsonrpc\":\"2.0\",\"id\":{reqId}}}";
+            cmd = $"{{\"method\":\"public/unsubscribe\",\"params\":{{\"channels\":[\"markprice.options.{undlSymbol}\"]}},\"jsonrpc\":\"2.0\",\"id\":{reqId}}}";
             WebsocketSend(cmd);
 
             _optionsReceived = false;
@@ -126,10 +135,17 @@ namespace OneXMM.Referential.Exchanges
             _wsClient.SendAsync(cmd.ToArraySegment(), System.Net.WebSockets.WebSocketMessageType.Text, true, default);
         }
 
-        public string FutureNameToExpiry(string instrumentName)
+        public override string OptionNameToExpiry(string instrumentName)
         {
-            var i1 = instrumentName.IndexOf('-');
-            var expiry = instrumentName.Substring(i1 + 1);
+            var cmpts = instrumentName.Split('-');
+            var expiry = cmpts[1];
+            return expiry.Length == 6 ? "0" + expiry : expiry;
+        }
+
+        public override string FutureNameToExpiry(string instrumentName)
+        {
+            var cmpts = instrumentName.Split('-');
+            var expiry = cmpts[1];
             return expiry.Length == 6 ? "0" + expiry : expiry;
         }
 
@@ -145,7 +161,7 @@ namespace OneXMM.Referential.Exchanges
             }
         }
 
-        protected async Task Listen()
+        protected async override Task Listen()
         {
             var recBuf = new Memory<byte>(new byte[2048]);
 
@@ -161,7 +177,7 @@ namespace OneXMM.Referential.Exchanges
                     var rec = recBuf.Slice(0, response.Count);
                     rec.CopyTo(payload.Slice(payloadSize, rec.Length));
                     payloadSize += rec.Length;
-                    contListen = response.EndOfMessage;
+                    contListen = !response.EndOfMessage;
                 }
                 while (contListen);
 
@@ -173,7 +189,7 @@ namespace OneXMM.Referential.Exchanges
                 }
                 else if (jsonString.Contains("\"subscription\""))
                 {
-                    
+                    throw new NotImplementedException();
                 }
             }
         }

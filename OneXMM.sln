@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Launcher", "Launcher\Launch
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configuration", "Configuration", "{BF3D51BD-F073-4258-ADAD-D3A235F0C9ED}"
 	ProjectSection(SolutionItems) = preProject
-		OneXMM\Configuration\Settings.json = OneXMM\Configuration\Settings.json
+		OneXMM\Configuration\ExchangeSettings.json = OneXMM\Configuration\ExchangeSettings.json
 		OneXMM\Configuration\SymbolMapping.json = OneXMM\Configuration\SymbolMapping.json
 	EndProjectSection
 EndProject

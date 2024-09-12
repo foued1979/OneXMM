@@ -39,6 +39,8 @@ namespace OneXMM.Referential.Exchanges
 
             _wsClient = new ClientWebSocket();
             _wsClient.ConnectAsync(new Uri(wsUri), default).ConfigureAwait(false).GetAwaiter().GetResult();
+
+            Task.Factory.StartNew(() => Listen());
         }
 
         public abstract Option[] LoadOptions(Pair pair);
@@ -50,6 +52,10 @@ namespace OneXMM.Referential.Exchanges
         public abstract double GetSpot(Futures futures);
 
         public abstract double GetOptionPrice(Option option);
+
+        public abstract string OptionNameToExpiry(string instrumentName);
+
+        public abstract string FutureNameToExpiry(string instrumentName);
 
         public double GetInterpolatedForward(DateTime maturity, SortedDictionary<DateTime, Futures> futures)
         {
@@ -123,5 +129,7 @@ namespace OneXMM.Referential.Exchanges
         }
 
         protected abstract void Authenticate(bool isTestMode);
+
+        protected abstract Task Listen();
     }
 }

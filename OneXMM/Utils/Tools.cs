@@ -54,19 +54,19 @@ namespace OneXMM.Utils
         public static Option[] SelectOptions(this SortedDictionary<double, Option> options, double forward)
         {
             var strikes = options.Keys;
-            var res = new List<Option>(4);
+            var res = new List<Option>(strikes.Count);
 
             for (int i = 0; i < strikes.Count; ++i) 
             {
                 var strike = strikes.ElementAt(i);
 
-                if (strike >= forward)
+                var strikeToFwdRatio = strike / forward - 1;
+                if (Math.Abs(strikeToFwdRatio) <= 0.2)
                 {
-                    var count = 0;
-                    while (i - 2 + count < 0) i++;
-                    while (i - 2 + count < strikes.Count && count < 5) { res.Add(options.Values.ElementAt(i - 2 + count)); count++; }
-                    break;
+                    res.Add(options.Values.ElementAt(i));
                 }
+
+                if (strikeToFwdRatio >= 0.25) break;
             }
 
             return res.ToArray();

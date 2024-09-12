@@ -1,14 +1,25 @@
 {
   "Mapping": {
-    "BTC/USDT": {
+    "BTC/USD": {
       "Option": {
-        "Deribit": "btc_usd"
+        "Deribit": "BTC"
       },
       "Future": {
-        "Deribit": "btc_usd"
+        "Deribit": "BTC"
       },
       "Index": {
         "Deribit": "btc_usd"
+      }
+    },
+    "BTC/USDT": {
+      "Option": {
+        "Deribit": "BTC"
+      },
+      "Future": {
+        "Deribit": "BTC"
+      },
+      "Spot": {
+        "Deribit": "BTC_USDT"
       }
     }
   }

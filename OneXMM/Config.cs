@@ -2,6 +2,7 @@
 
 namespace OneXMM
 {
+    using Nethereum.Signer;
     using OneXMM.Configuration;
     using OneXMM.Referential.Assets;
     using OneXMM.Referential.Exchanges;
@@ -32,11 +33,27 @@ namespace OneXMM
 
             throw new Exception($"Cannot find {symbolType} for Pair {pair.Symbol} on exchange {exchange}.");
         }
+
+        public static Pair? GetPair(string coinSymbol, string counterSymbol, Blockchains chain)
+        {
+            if (_referential.PairDefs.Any(p => p.Coin.Equals(coinSymbol, StringComparison.OrdinalIgnoreCase) 
+                && p.Base.Equals(counterSymbol, StringComparison.OrdinalIgnoreCase)
+                && p.Chain == chain))
+            {
+                var coin = _referential.Coins.FirstOrDefault(c => c.Symbol.Equals(coinSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || !c.IsFiat && c.Chain == chain));
+                var counter = _referential.Coins.FirstOrDefault(c => c.Symbol.Equals(counterSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || !c.IsFiat && c.Chain == chain));
+
+                if (coin is null || counter is null || !_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}/{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coinSymbol}/{counterSymbol}.");
+                return new Pair(coin, counter, exchangeSymbols);
+            }
+
+            return null;
+        }
+
         public static Pair? GetPair(Coin coin, Coin counter)
         {
-            if (!(_referential.Coins.Contains(coin) && _referential.Coins.Contains(counter))
-                || !_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}/{counter.Symbol}", out var exchangeSymbols)) return null;
-            return new Pair(coin, counter, exchangeSymbols);
+            if (coin.Chain != counter.Chain) return null;
+            return GetPair(coin.Symbol, counter.Symbol, coin.Chain);
         }
 
         private static ExchangeSettings SetSettings()

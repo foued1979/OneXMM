@@ -15,26 +15,26 @@ namespace OneXMM.Referential.Exchanges.Responses
 
         public DeribitInstrumentDef() { }
 
-        public static explicit operator Option(DeribitInstrumentDef optionDef)
+        public static Option ToOption(DeribitInstrumentDef optionDef, Blockchains chain)
         {
             var exchange = Config.Exchanges[OneXMM.Exchanges.Deribit.ToString()];
             return new Option(optionDef.instrument_id,
                 exchange,
                 optionDef.instrument_name,
-                Config.RefData.GetPair(optionDef.base_currency, optionDef.counter_currency) ?? throw new Exception($"Unknown pair {optionDef.base_currency}/{optionDef.counter_currency} for option on {exchange.Name}."),
+                Config.GetPair(optionDef.base_currency, optionDef.counter_currency, chain) ?? throw new Exception($"Unknown pair {optionDef.base_currency}/{optionDef.counter_currency} for option on {exchange.Name}."),
                 optionDef.option_type.ToLower().Equals("call") ? OptionTypes.Call : OptionTypes.Put,
                 optionDef.strike,
                 (exchange as Deribit)!.OptionNameToExpiry(optionDef.instrument_name));
         }
 
-        public static explicit operator Futures(DeribitInstrumentDef optionDef)
+        public static Futures ToFutures(DeribitInstrumentDef futDef, Blockchains chain)
         {
             var exchange = Config.Exchanges[OneXMM.Exchanges.Deribit.ToString()];
-            return new Futures(optionDef.instrument_id,
+            return new Futures(futDef.instrument_id,
                 exchange,
-                optionDef.instrument_name,
-                Config.RefData.GetPair(optionDef.base_currency, optionDef.counter_currency) ?? throw new Exception($"Unknown pair {optionDef.base_currency}/{optionDef.counter_currency} for option on {exchange.Name}."),
-                (exchange as Deribit)!.FutureNameToExpiry(optionDef.instrument_name));
+                futDef.instrument_name,
+                Config.GetPair(futDef.base_currency, futDef.counter_currency, chain) ?? throw new Exception($"Unknown pair {futDef.base_currency}/{futDef.counter_currency} for Futures on {exchange.Name}."),
+                (exchange as Deribit)!.FutureNameToExpiry(futDef.instrument_name));
         }
     }
 }

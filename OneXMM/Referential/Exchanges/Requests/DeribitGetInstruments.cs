@@ -7,6 +7,7 @@ namespace OneXMM.Referential.Exchanges.Requests
     internal class DeribitGetInstruments
     {
         public bool testnet { get; set; }
+
         public DeribitInstrumentDef[] result { get; set; } = [];
 
         public DeribitGetInstruments() { }

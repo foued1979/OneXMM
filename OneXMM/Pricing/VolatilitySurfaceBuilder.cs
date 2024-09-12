@@ -58,42 +58,7 @@ namespace OneXMM.Pricing
 
         public void Calibrate(VolUpdateTempos updateTempo)
         {
-            var smiles = new Dictionary<DateTime, SABR>(_smiles.Count);
-            var now = DateTime.Now;
-
-            switch (updateTempo)
-            {
-                case VolUpdateTempos.OneHour:
-                    var oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneDayMaturity));
-                    break;
-                case VolUpdateTempos.TwoHours:
-                    oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
-                    var oneWeekMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(7);
-                    var twoWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneDayMaturity));
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneWeekMaturity));
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, twoWeeksMaturity));
-                    break;
-                case VolUpdateTempos.FourHours:
-                    oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
-                    oneWeekMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(7);
-                    twoWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
-                    var threeWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
-                    var oneMonthMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
-                    var twoMonthsMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
-                    var threeMonthsMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneDayMaturity));
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneWeekMaturity));
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, twoWeeksMaturity));
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, threeWeeksMaturity));
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, oneMonthMaturity));
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, twoMonthsMaturity));
-                    smiles.AddRange(Tools.ExtractSmiles(_smiles.Values, threeMonthsMaturity));
-                    break;
-                default:
-                    throw new NotImplementedException($"Unknown tempo {updateTempo} for calibration.");
-            }
+            GetRequiredSmiles(updateTempo, _smiles, out var smiles);
 
             // We get futures prices and we compute the Yields
             var futures = GetFutures(smiles);
@@ -118,43 +83,113 @@ namespace OneXMM.Pricing
                 SABRToCalibrate.Add(smile, smile.GetOptions().SelectOptions(GetForward(spot, futuresTimestamp, smile.SmileExpiry)));
             }
 
-            var calibrationTasks = new Task<MinimizationResult>[SABRToCalibrate.Count];
-            var prices = new SortedDictionary<Option, double>[SABRToCalibrate.Count];
-            var result = new SABR[SABRToCalibrate.Count];
+            var optionPrices = Exchange.GetOptionPrices(Pair);
 
-            spot = Exchange.GetSpot(Pair);
-            var calibrationTimestamp = DateTime.Now;
-            Thread.Sleep(1000);
+            //var calibrationTasks = new Task<MinimizationResult>[SABRToCalibrate.Count];
+            //var prices = new SortedDictionary<Option, double>[SABRToCalibrate.Count];
+            //var result = new SABR[SABRToCalibrate.Count];
 
-            for (int i = 0; i < SABRToCalibrate.Count; ++i)
+            //spot = Exchange.GetSpot(Pair);
+            //var calibrationTimestamp = DateTime.Now;
+            //Thread.Sleep(1000);
+
+            //for (int i = 0; i < SABRToCalibrate.Count; ++i)
+            //{
+            //    var index = i;
+
+            //    var elementsToCalibrate = SABRToCalibrate.ElementAt(i).Value;
+            //    var forward = GetForward(spot, calibrationTimestamp, SABRToCalibrate.Keys.ElementAt(i).SmileExpiry);
+
+            //    var stopTime = DateTime.Now.AddSeconds(1);
+            //    prices[index] = Exchange.GetOptionPrices(elementsToCalibrate);
+
+            //    calibrationTasks[index] = Task<MinimizationResult>.Run(() =>
+            //    {
+            //        return VolOptimizer.CalibrateSmile(spot, forward, SABRToCalibrate.ElementAt(index).Key, prices[index]);
+            //    });
+
+            //    while (DateTime.Now.CompareTo(stopTime) < 0) ;
+            //}
+
+            //Task.WaitAll(calibrationTasks);
+
+            //for (int i = 0; i < SABRToCalibrate.Count; ++i)
+            //{
+            //    var parameters = calibrationTasks[i].Result.MinimizingPoint;
+            //    result[i] = SABRToCalibrate.ElementAt(i).Key.WithParameters(parameters[0], parameters[1], parameters[2], parameters[3]);
+            //}
+
+            //foreach (var sabr in result)
+            //{
+            //    Smiles.Add(sabr.SmileExpiry, sabr);
+            //}
+        }
+
+        private static void GetRequiredSmiles(VolUpdateTempos updateTempo, SortedDictionary<DateTime, SABR> allSmiles, out Dictionary<DateTime, SABR> requiredSmiles)
+        {
+            requiredSmiles = new Dictionary<DateTime, SABR>(allSmiles.Count);
+            var now = DateTime.Now;
+
+            switch (updateTempo)
             {
-                var index = i;
-
-                var elementsToCalibrate = SABRToCalibrate.ElementAt(i).Value;
-                var forward = GetForward(spot, calibrationTimestamp, SABRToCalibrate.Keys.ElementAt(i).SmileExpiry);
-
-                var stopTime = DateTime.Now.AddSeconds(1);
-                prices[index] = Exchange.GetOptionPrices(elementsToCalibrate);
-
-                calibrationTasks[index] = Task<MinimizationResult>.Run(() =>
-                {
-                    return VolOptimizer.CalibrateSmile(spot, forward, SABRToCalibrate.ElementAt(index).Key, prices[index]);
-                });
-
-                while (DateTime.Now.CompareTo(stopTime) < 0) ;
-            }
-
-            Task.WaitAll(calibrationTasks);
-
-            for (int i = 0; i < SABRToCalibrate.Count; ++i)
-            {
-                var parameters = calibrationTasks[i].Result.MinimizingPoint;
-                result[i] = SABRToCalibrate.ElementAt(i).Key.WithParameters(parameters[0], parameters[1], parameters[2], parameters[3]);
-            }
-
-            foreach (var sabr in result)
-            {
-                Smiles.Add(sabr.SmileExpiry, sabr);
+                case VolUpdateTempos.TenMinutes:
+                    var oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneDayMaturity));
+                    break;
+                case VolUpdateTempos.FifteenMinutes:
+                    oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
+                    var oneWeekMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(7);
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneDayMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneWeekMaturity));
+                    break;
+                case VolUpdateTempos.ThirtyMinutes:
+                    oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
+                    oneWeekMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(7);
+                    var twoWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneDayMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneWeekMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, twoWeeksMaturity));
+                    break;
+                case VolUpdateTempos.OneHour:
+                    oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
+                    oneWeekMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(7);
+                    twoWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    var threeWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(21);
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneDayMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneWeekMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, twoWeeksMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, threeWeeksMaturity));
+                    break;
+                case VolUpdateTempos.TwoHours:
+                    oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
+                    oneWeekMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(7);
+                    twoWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    threeWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(21);
+                    var oneMonthMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(30);
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneDayMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneWeekMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, twoWeeksMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, threeWeeksMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneMonthMaturity));
+                    break;
+                case VolUpdateTempos.FourHours:
+                    oneDayMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(1);
+                    oneWeekMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(7);
+                    twoWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(14);
+                    threeWeeksMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(21);
+                    oneMonthMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(30);
+                    var twoMonthsMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(60);
+                    var threeMonthsMaturity = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddDays(90);
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneDayMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneWeekMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, twoWeeksMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, threeWeeksMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, oneMonthMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, twoMonthsMaturity));
+                    requiredSmiles.AddRange(Tools.ExtractSmiles(allSmiles.Values, threeMonthsMaturity));
+                    break;
+                default:
+                    throw new NotImplementedException($"Unknown tempo {updateTempo} for calibration.");
             }
         }
 

@@ -7,6 +7,7 @@ namespace OneXMM.Referential.Assets
     public sealed class Pair
     {
         public string Symbol => $"{Coin.Symbol}/{Base.Symbol}";
+        public Blockchains Chain => Coin.Chain;
         public Coin Coin { get; }
         public Coin Base { get; }
         public Dictionary<SymbolTypes, Dictionary<Exchanges, string>> MappingExchangeSymbols { get; }
@@ -28,7 +29,7 @@ namespace OneXMM.Referential.Assets
         {
             if (obj is Pair p)
             {
-                return p.Coin.Equals(Coin) && p.Base.Equals(Base);
+                return p.Coin.Equals(Coin) && p.Base.Equals(Base) && p.Chain == Chain;
             }
 
             return false;
