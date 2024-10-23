@@ -10,6 +10,7 @@ namespace OneXMM.Configuration
         public string TestWsUri { get; set; } = "";
         public string ProdWsUri { get; set; } = "";
         public string Cutoff { get; set; } = "";
+        public bool? UseUniversalTime { get; set; }
         public string ExpiryFormat { get; set; } = "";
     }
 }

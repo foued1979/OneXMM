@@ -13,13 +13,29 @@ namespace OneXMM.Pricing
             var reg = MathNet.Numerics.LinearRegression.MultipleRegression.Svd(S, R);
 
             var res = 0.0;
+            var errSq = 0.0;
+
+            for (int i = 0; i < R.Count; ++i)
+            {
+                var err = 0.0;
+
+                for (int j = 0; j < S.ColumnCount; ++j)
+                {
+                    err += S[i, j] * reg[j];
+                }
+
+                err -= R[i];
+                errSq += err * err;
+            }
+
+            var std = Math.Sqrt(errSq) / (R.Count - 1);
 
             for (int i = 0; i < reg.Count(); ++i)
             {
                 res += Math.Pow(atmVols[i] * reg[i], 2);
             }
 
-            return Math.Sqrt(res);
+            return Math.Sqrt(res) + std;
         }
 
         private static void GetReturns(double[][] prices, int interval, out Matrix<double> refReturns, out Vector<double> targetReturns)

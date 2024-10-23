@@ -15,15 +15,24 @@ namespace OneXMM.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static VolUpdateTempos ToVolUpdateTempo(this PoolMaturities matu)
+        internal static PoolMaturities[] ToPoolMaturity(this string[] terms)
         {
-            switch (matu)
-            {
-                case PoolMaturities.OneDay: return VolUpdateTempos.OneHour;
-                case PoolMaturities.OneWeek: return VolUpdateTempos.TwoHours;
-                case PoolMaturities.TwoWeeks: return VolUpdateTempos.TwoHours;
-                default: return VolUpdateTempos.FourHours;
-            }
+            var res = new PoolMaturities[terms.Length];
+            for (int i = 0; i < terms.Length; i++) res[i] = terms[i].ToPoolMaturity();
+            return res;
+        }
+
+        internal static PoolMaturities ToPoolMaturity(this string term)
+        {
+            if (term.Equals("1D")) return PoolMaturities.OneDay;
+            if (term.Equals("1W")) return PoolMaturities.OneWeek;
+            if (term.Equals("2W")) return PoolMaturities.TwoWeeks;
+            if (term.Equals("3W")) return PoolMaturities.ThreeWeeks;
+            if (term.Equals("1M")) return PoolMaturities.OneMonth;
+            if (term.Equals("2M")) return PoolMaturities.TwoMonths;
+            if (term.Equals("3M")) return PoolMaturities.ThreeMonths;
+
+            throw new Exception($"Unknown term {term}.");
         }
     }
 }

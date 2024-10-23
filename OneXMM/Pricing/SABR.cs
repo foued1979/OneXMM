@@ -8,7 +8,7 @@ namespace OneXMM.Pricing
 
     public sealed class SABR
     {
-        public DateTime SmileDate { get; }
+        public DateTime SmileDate { get; private set; }
         public DateTime SmileExpiry { get; }
         
         public double Alpha { get; set; }
@@ -35,6 +35,11 @@ namespace OneXMM.Pricing
             Rho = rho;
 
             return this;
+        }
+
+        public void UpdateSmileDate(DateTime smileDate)
+        {
+            SmileDate = smileDate;
         }
 
         public void AddOption(Option option)

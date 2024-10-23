@@ -20,18 +20,26 @@ namespace OneXMM.Referential
         public double Strike { get; }
         public DateTime Expiry { get; }
 
-        private Option(IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
-            : this(exchange, pair, optionType, strike, expiry) { Id = -1; Symbol = symbol; }
+        public Option(IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
+            : this(exchange, pair, optionType, strike, expiry) { Symbol = symbol; }
 
         public Option(IExchange exchange, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry) 
         {
-            Id = -1;
+            Id = $"{exchange.Name}_{pair.Symbol}_{optionType}_{strike}_{expiry.ToString("ddMMMyy")}".GetHashCode();
             Symbol = "Custom";
             Exchange = exchange as Exchange;
             Pair = pair;
             OptionType = optionType;
             Strike = strike;
-            Expiry = expiry;
+
+            // We adjust the expiry depending on whether Exchange is using UTC time
+            Expiry = exchange.UseUniversalTime
+                ? expiry.Kind == DateTimeKind.Utc
+                    ? expiry
+                    : expiry.ToUniversalTime()
+                : expiry.Kind == DateTimeKind.Utc
+                    ? expiry.ToLocalTime()
+                    : expiry;
         }
 
         public Option(int id, Exchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, string expiry)
@@ -42,11 +50,15 @@ namespace OneXMM.Referential
             Pair = pair;
             OptionType = optionType;
             Strike = strike;
+
+            // The Exchange::ToExpiry includes the UseUniversalTime check
             Expiry = exchange.ToExpiry(expiry);
         }
 
         public double Price(DateTime asof, double spot, VolatilitySurface volSurface)
         {
+            if (Exchange.UseUniversalTime) asof = asof.ToUniversalTime();
+
             var expiry = (Expiry - volSurface.SurfaceDate).TotalDays * Constants.OneOver365;
             var forward = volSurface.GetForward(spot, asof, Expiry);
             var vol = volSurface.GetVol(forward, Strike, Expiry);
@@ -66,6 +78,8 @@ namespace OneXMM.Referential
 
         public double Price(DateTime asof, double spot, double forward, SABR smile)
         {
+            if (Exchange.UseUniversalTime) asof = asof.ToUniversalTime();
+
             var expiry = (Expiry - smile.SmileDate).TotalDays * Constants.OneOver365;
             var vol = smile.GetVol(forward, Strike);
 
@@ -82,6 +96,20 @@ namespace OneXMM.Referential
                 : priceAdjust * (Strike * nsd.CumulativeDistribution(-d2) - forward * nsd.CumulativeDistribution(-d1));
         }
 
+        public override bool Equals(object? obj)
+        {
+            if (obj is Option o)
+            {
+                return o.Exchange.Name.Equals(Exchange.Name)
+                    && o.Pair.Equals(Pair)
+                    && o.Expiry.CompareTo(Expiry) == 0
+                    && o.Strike == Strike
+                    && o.OptionType == OptionType;
+            }
+
+            return false;
+        }
+
         public override int GetHashCode()
         {
             return Id;
@@ -91,6 +119,7 @@ namespace OneXMM.Referential
         {
             if (other is null) return -1;
 
+            if (other.OptionType != OptionType) return OptionType == OptionTypes.Call ? -1 : 1;
             var expiryCompare = Expiry.CompareTo(other.Expiry);
             return expiryCompare == 0 ? Strike.CompareTo(other.Strike) : expiryCompare;
         }

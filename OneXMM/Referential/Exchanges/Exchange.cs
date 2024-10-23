@@ -19,15 +19,22 @@ namespace OneXMM.Referential.Exchanges
 
         public string Name { get; }
         public bool IsTestMode { get; }
+
+        /// <summary>
+        /// Gets the cutoff in local time.
+        /// </summary>
         public TimeSpan Cutoff { get; }
         public abstract bool QuoteInBase { get; }
         public abstract bool IsDiscounted { get; }
+        public bool UseUniversalTime { get; private set; }
 
         public Exchange(OneXMM.Exchanges exchange, bool isTestMode) 
         {
             Name = exchange.ToString();
             IsTestMode = isTestMode;
+
             _config = OneXMM.Config.GetExchangeConfig(exchange);
+            UseUniversalTime = _config.UseUniversalTime ?? throw new Exception($"Exchange - UseUniversalTime has not been set for {exchange}.");
             Cutoff = _config.Cutoff.ToTimeSpan();
             
 
@@ -118,7 +125,15 @@ namespace OneXMM.Referential.Exchanges
 
         public DateTime ToExpiry(string expiryStr)
         {
-            return DateTime.ParseExact(expiryStr, _config.ExpiryFormat, null).Add(Cutoff);
+            var date = DateTime.ParseExact(expiryStr, _config.ExpiryFormat, null).Add(Cutoff);
+
+            if (UseUniversalTime)
+            {
+                var offset = TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now);
+                date = date.Add(offset).ToUniversalTime();
+            }
+
+            return date;
         }
 
         public void Dispose()

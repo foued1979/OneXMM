@@ -7,9 +7,13 @@ namespace OneXMM.Interfaces
 
     public interface IExchange
     {
+        string Name { get; }
+
         bool QuoteInBase { get; }
 
         bool IsDiscounted { get; }
+
+        bool UseUniversalTime { get; }
 
         Option[] LoadOptions(Pair pair);
 

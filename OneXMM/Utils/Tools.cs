@@ -8,8 +8,9 @@ namespace OneXMM.Utils
 
     internal static class Tools
     {
-        // N-1(0.25)
-        private const double _moneyness40 = -0.2533471031358000;
+        // For a Call
+        private const double _moneyness25 = -0.674489750196082;
+        private const double _minExp = 0.00136986301369863;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsAround(this DateTime d, DateTime aroundDate)
@@ -17,41 +18,40 @@ namespace OneXMM.Utils
             return System.Math.Abs((aroundDate - d).TotalSeconds) < 1;
         }
 
+        /// <summary>
+        /// FwdToStrike ratio for 100% vol and simple delta of 20% or 90%
+        /// </summary>
+        /// <param name="expiry">The target expiry.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double SpotToStrikeRatio(double expiry)
+        public static double FwdToStrikeRatios25(double expiry)
         {
-            return Math.Exp(_moneyness40 * Math.Sqrt(expiry));
+            expiry = Math.Max(expiry, _minExp);
+            return Math.Exp(_moneyness25 * Math.Sqrt(expiry));
         }
 
         public static SABR[] ExtractSmiles(IEnumerable<SABR> allSmiles, DateTime matu)
         {
+            var res = new List<SABR>(allSmiles.Count());
+
             for (int i = 0; i < allSmiles.Count(); ++i)
             {
                 var m = allSmiles.ElementAt(i).SmileExpiry;
                 var compare = matu.CompareTo(m);
 
-                if (compare == 0)
-                {
-                    return [allSmiles.ElementAt(i)];
-                }
-                else if (compare < 0)
-                {
-                    if (i == 0)
-                    {
-                        return [allSmiles.First()];
-                    }
-
-                    var res = new SABR[2];
-                    res[0] = allSmiles.ElementAt(i - 1);
-                    res[1] = allSmiles.ElementAt(i);
-                    return res;
-                }
+                if (m.CompareTo(matu) <= 0) res.Add(allSmiles.ElementAt(i));
+                else break;
             }
 
-            return [allSmiles.Last()];
+            return res.ToArray();
         }
 
-        public static Option[] SelectOptions(this SortedDictionary<double, Option> options, double forward)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void UpdateSmileDate(this Dictionary<DateTime, SABR> smiles, DateTime newSmileDate)
+        {
+            foreach (var smile in smiles) smile.Value.UpdateSmileDate(newSmileDate);
+        }
+
+        public static Option[] SelectOptions(this SortedDictionary<double, Option> options, double forward, DateTime asof)
         {
             var strikes = options.Keys;
             var res = new List<Option>(strikes.Count);
@@ -59,14 +59,21 @@ namespace OneXMM.Utils
             for (int i = 0; i < strikes.Count; ++i) 
             {
                 var strike = strikes.ElementAt(i);
+                var minRatio = FwdToStrikeRatios25((options.ElementAt(i).Value.Expiry - asof).TotalDays * Constants.OneOver365);
 
-                var strikeToFwdRatio = strike / forward - 1;
-                if (Math.Abs(strikeToFwdRatio) <= 0.2)
+                // We check for Puts
+                var r = strike / forward;
+
+                if (r >= minRatio && r <= 1.0)
                 {
                     res.Add(options.Values.ElementAt(i));
                 }
 
-                if (strikeToFwdRatio >= 0.25) break;
+                if (r > 1.0)
+                {
+                    res.Add(options.Values.ElementAt(i));
+                    break;
+                }
             }
 
             return res.ToArray();
@@ -76,6 +83,37 @@ namespace OneXMM.Utils
         public static void AddRange(this Dictionary<DateTime, SABR> dict, SABR[] smiles)
         {
             foreach (var s in smiles) dict.TryAdd(s.SmileExpiry, s);
+        }
+
+        public static SortedDictionary<Option, double> FilterByMaturity(this SortedDictionary<Option, double> allOptions, DateTime maturity)
+        {
+            var res = new SortedDictionary<Option, double>();
+            foreach(var d in allOptions) if (d.Key.Expiry.Equals(maturity)) res.Add(d.Key, d.Value);
+            return res;
+        }
+
+        public static SortedDictionary<Option, double> FilterByStrike(this SortedDictionary<Option, double> allOptions, Option[] options)
+        {
+            var res = new SortedDictionary<Option, double>();
+            var optionsCopy = (Option[])options.Clone();
+
+            foreach (var option in allOptions) 
+                for (int i = 0; i < optionsCopy.Length; i++)
+                    if (optionsCopy[i].Equals(option.Key))
+                    {
+                        res.Add(option.Key, option.Value);
+                        optionsCopy.RemoveElementAt(i);
+                        break;
+                    }
+
+            return res;
+        }
+
+        public static T[] RemoveElementAt<T>(this T[] array, int index)
+        {
+            if (index >= array.Length) return array;
+            array[index] = array.Last();
+            return array.SkipLast(1).ToArray();
         }
     }
 }

@@ -7,7 +7,7 @@ namespace OneXMM.Referential
 
     public sealed class Futures
     {
-        public static Futures GetNoExpiryFutures(DateTime asof, Pair pair) => new Futures(pair, asof);
+        public static Futures GetNoExpiryFutures(Pair pair, DateTime asof) => new Futures(pair, asof);
         public int Id { get; }
         public double Yield { get; private set; }
         public Exchange? Exchange { get; }
@@ -17,12 +17,12 @@ namespace OneXMM.Referential
 
         public Futures() { }
 
-        private Futures(Pair pair, DateTime asof)
+        private Futures(Pair pair, DateTime expiry)
         {
             Id = -1;
             Symbol = "NoExp";
             Pair = pair;
-            Expiry = asof;
+            Expiry = expiry;
         }
 
         public Futures(int id, Exchange exchange, string symbol, Pair pair, string expiry)
@@ -31,6 +31,7 @@ namespace OneXMM.Referential
             Exchange = exchange;
             Symbol = symbol;
             Pair = pair;
+
             Expiry = exchange.ToExpiry(expiry);
         }
 

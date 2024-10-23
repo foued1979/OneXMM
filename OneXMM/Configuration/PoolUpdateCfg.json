@@ -1,0 +1,15 @@
+﻿{
+  "TermByUpdateFreq": {
+    "OneMinute": [],
+    "TwoMinutes": [],
+    "ThreeMinutes": [],
+    "FiveMinutes": [],
+    "TenMinutes": [ "1D" ],
+    "FifteenMinutes": [ "1W" ],
+    "TwentyMinutes": [ "2W" ],
+    "ThirtyMinutes": [ "3W" ],
+    "OneHour": [],
+    "TwoHours": [ "1M" ],
+    "FourHours": [ "2M", "3M" ]
+  }
+}

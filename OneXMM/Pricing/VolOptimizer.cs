@@ -11,20 +11,20 @@ namespace OneXMM.Pricing
     {
         public static MinimizationResult CalibrateSmile(double spot, double fwd, SABR smile, SortedDictionary<Option, double> options)
         {
-            var simplex = new NelderMeadSimplex(1E-5, 1500);
+            var simplex = new NelderMeadSimplex(1E-10, 2000);
             var initialGuess = new DenseVector(4);
 
-            initialGuess[0] = 0.6;
-            initialGuess[1] = 0.3;
+            initialGuess[0] = 0.5;
+            initialGuess[1] = 0.35;
             initialGuess[2] = 0.72;
-            initialGuess[3] = 0.0;
+            initialGuess[3] = 0.2;
 
             var initialBump = new DenseVector(4);
 
             initialBump[0] = 0.1;
-            initialBump[1] = 0.01;
-            initialBump[2] = 0.01;
-            initialBump[3] = 0.005;
+            initialBump[1] = 0.025;
+            initialBump[2] = 0.1;
+            initialBump[3] = 0.025;
 
             return simplex.FindMinimum(new VolObjectiveFunction(smile.SmileDate, spot, fwd, smile, options, initialGuess), initialGuess, initialBump);
         }
@@ -42,7 +42,7 @@ namespace OneXMM.Pricing
 
             public double Value { get; private set; }
 
-            public bool IsGradientSupported => false;
+            public bool IsGradientSupported => true;
 
             public Vector<double> Gradient { get; }
 
@@ -77,7 +77,7 @@ namespace OneXMM.Pricing
                 foreach (var option in _options)
                 {
                     var err = GetError(_asof, option, _spot, _fwd, _smile);
-                    Value += err * err;
+                    Value += (err * err) / option.Value;
                 }
             }
 

@@ -15,12 +15,14 @@ namespace OneXMM
         internal readonly static Configuration.Referential _referential;
         internal readonly static SymbolMapping _symbolMapping;
         internal readonly static SortedDictionary<string, Exchange> Exchanges = new SortedDictionary<string, Exchange>();
+        internal readonly static PoolUpdateCfg _poolUpdateCfg;
 
         static Config()
         {
             _settings = SetSettings();
             _referential = SetRefData();
             _symbolMapping = SetSymbolMapping();
+            _poolUpdateCfg = SetPoolUpdateCfg();
         }
 
         public static ExchangeConfig GetExchangeConfig(Exchanges exchange) => _settings.Exchanges[exchange];
@@ -74,6 +76,12 @@ namespace OneXMM
         {
             var appPath = Environment.CurrentDirectory;
             return Utils.Utils.ConvertFileToObject<SymbolMapping>(Path.Combine(appPath, "Configuration\\SymbolMapping.json")) ?? throw new Exception("ReferentialData - Issue reading SymbolMapping.");
+        }
+
+        private static PoolUpdateCfg SetPoolUpdateCfg()
+        {
+            var appPath = Environment.CurrentDirectory;
+            return Utils.Utils.ConvertFileToObject<PoolUpdateCfg>(Path.Combine(appPath, "Configuration\\PoolUpdateCfg.json")) ?? throw new Exception("ReferentialData - Issue reading PoolUpdateCfg.");
         }
     }
 }

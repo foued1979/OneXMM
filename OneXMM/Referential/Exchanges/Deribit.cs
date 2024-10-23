@@ -14,7 +14,7 @@ namespace OneXMM.Referential.Exchanges
         private const string Secret = "VaOUj5y2JsBotBNaqpFy7YF3I-_5SfR8_-RVaYJkX8o";
         private string _connectionToken;
         private bool _optionsReceived = false;
-        private DeribitMarkPriceOptions[] _options = [];
+        private DeribitMarkPriceOptions[] _options;
         
         public override bool QuoteInBase => false;
         public override bool IsDiscounted => true;
@@ -115,15 +115,22 @@ namespace OneXMM.Referential.Exchanges
 
             Parallel.ForEach(_options, opt => 
             {
+                if (opt.mark_price == 0) return;
+
                 var nameCmpts = opt.instrument_name.Split('-');
-                if (nameCmpts[1][2] < '0' || nameCmpts[1][2] > '9') nameCmpts[1] = "0" + nameCmpts[1];
+
+                // If the option is a call, we exclude
+                // We only focus on Put options
+                if (nameCmpts[3].Equals("C")) return;
+
+                if (nameCmpts[1][1] < '0' || nameCmpts[1][1] > '9') nameCmpts[1] = "0" + nameCmpts[1];
 
                 var option = new Option(this,
                     pair,
-                    nameCmpts[3].Equals('C') ? OptionTypes.Call : OptionTypes.Put,
+                    OptionTypes.Put,
                     Convert.ToDouble(nameCmpts[2]),
                     ToExpiry(nameCmpts[1]));
-
+                
                 lock (res) res.Add(option, opt.mark_price);
             });
 
@@ -189,7 +196,9 @@ namespace OneXMM.Referential.Exchanges
                 }
                 else if (jsonString.Contains("\"subscription\""))
                 {
-                    throw new NotImplementedException();
+                    var response = Utils.ConvertJsonToObject<DeribitRawSubscriptionResponse>(jsonString);
+                    if (response is null || response.Params is null) throw new Exception($"Deribit - Cannot read subscription response from server.");
+                    ReadSubscriptionData(response.Params);
                 }
             }
         }
@@ -210,15 +219,14 @@ namespace OneXMM.Referential.Exchanges
             }
         }
 
-        private void ReadSubscriptionData(object? data)
+        private void ReadSubscriptionData(object data)
         {
-            var rawSubscription = Utils.ConvertJsonToObject<DeribitRawSubscriptionResponse>(data.ToString()!);
-            if (rawSubscription is null || rawSubscription.Params is null) return;
-            var innerData = Utils.ConvertJsonToObject<DeribitDataWrapper>(rawSubscription.Params.ToString()!);
+            var innerData = Utils.ConvertJsonToObject<DeribitDataWrapper>(data.ToString()!) ?? throw new Exception("Deribit - Cannot read Subscription inner data.");
 
-            if (innerData.channel.StartsWith("markprice"))
+            if (innerData.channel.StartsWith("markprice") && !_optionsReceived)
             {
-                var options = Utils.ConvertJsonToObject<DeribitMarkPriceOptions[]>(innerData.data.ToString());
+                _options = Utils.ConvertJsonToObject<DeribitMarkPriceOptions[]>(innerData.data.ToString()!) ?? [];
+                _optionsReceived = true;
             }
             else throw new NotImplementedException();
         }

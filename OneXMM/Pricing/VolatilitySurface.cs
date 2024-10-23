@@ -2,12 +2,15 @@
 
 namespace OneXMM.Pricing
 {
+    using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
 
     public class VolatilitySurface
     {
         public DateTime SurfaceDate { get; set; }
+
+        public IExchange Exchange { get; set; }
 
         public Pair Pair { get; set; }
 
@@ -17,14 +20,21 @@ namespace OneXMM.Pricing
 
         public VolatilitySurface() { }
 
-        public VolatilitySurface(DateTime surfaceDate, Pair pair)
+        public VolatilitySurface(DateTime surfaceDate, Pair pair, IExchange exchange)
         {
             Pair = pair;
-            SurfaceDate = surfaceDate; 
+            Exchange = exchange;
+            SurfaceDate = exchange.UseUniversalTime ? surfaceDate.ToUniversalTime() : surfaceDate; 
         }
 
         public double GetForward(double spot, DateTime asof, DateTime expiry)
         {
+            if (Exchange.UseUniversalTime)
+            {
+                asof = asof.ToUniversalTime();
+                expiry = expiry.ToUniversalTime();
+            }
+
             var yf = 0.0;
 
             if (Yields.First().Key.CompareTo(expiry) > 0)
@@ -60,6 +70,8 @@ namespace OneXMM.Pricing
 
         public double GetVol(double forward, double strike, DateTime expiry)
         {
+            if (Exchange.UseUniversalTime) expiry = expiry.ToUniversalTime();
+
             if (Smiles.Keys.First().CompareTo(expiry) > 0)
             {
                 return Smiles.First().Value.GetVol(forward, strike);

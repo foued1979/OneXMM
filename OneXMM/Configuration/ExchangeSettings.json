@@ -7,6 +7,7 @@
       "TestWsUri": "wss://test.deribit.com/ws/api/v2",
       "ProdWsUri": "wss://www.deribit.com/ws/api/v2",
       "Cutoff": "08H00",
+      "UseUniversalTime": true,
       "ExpiryFormat": "ddMMMyy"
     }
   }
