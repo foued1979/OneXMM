@@ -1,0 +1,8 @@
+﻿{
+  "DataSources": {
+    "CoinMarketCap": {
+      "ProdUrl": "",
+      "TestUrl": "https://sandbox-api.coinmarketcap.com",
+    }
+  }
+}

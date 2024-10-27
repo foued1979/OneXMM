@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configuration", "Configuration", "{BF3D51BD-F073-4258-ADAD-D3A235F0C9ED}"
 	ProjectSection(SolutionItems) = preProject
 		OneXMM\Configuration\ExchangeSettings.json = OneXMM\Configuration\ExchangeSettings.json
+		OneXMM\Configuration\MySQLSettings.txt = OneXMM\Configuration\MySQLSettings.txt
 		OneXMM\Configuration\PoolUpdateCfg.json = OneXMM\Configuration\PoolUpdateCfg.json
 		OneXMM\Configuration\SymbolMapping.json = OneXMM\Configuration\SymbolMapping.json
 	EndProjectSection

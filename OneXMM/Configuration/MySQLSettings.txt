@@ -1,0 +1,4 @@
+﻿PORT=3306
+USER=root
+PASSWORD=FouedKoi2017#!
+MARKETDATA_DB=market_data

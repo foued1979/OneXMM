@@ -13,7 +13,7 @@ namespace OneXMM.Factories
 
     public static class ContractFactory
     {
-        public static Contract[] GetEthereumLikeContracts(Blockchains blockchain, bool isTestMode)
+        public static Contract[] GetEthereumLikeContracts(Blockchains blockchain, string contractAddress, bool isTestMode)
         {
             var assembly = Assembly.GetExecutingAssembly();
             var embeddedResources = assembly.GetManifestResourceNames();
@@ -22,7 +22,7 @@ namespace OneXMM.Factories
 
             foreach (var embeddedResource in embeddedResources)
             {
-                if (embeddedResource.Contains("_Abi.json"))
+                if (embeddedResource.Contains("OneXMM.Resources") && embeddedResource.EndsWith(".json"))
                 {
                     using (var stream = assembly.GetManifestResourceStream(embeddedResource))
                     using (var streamReader = new StreamReader(stream))
@@ -35,7 +35,7 @@ namespace OneXMM.Factories
                         {
                             case Blockchains.Ethereum:
                             case Blockchains.HardHat:
-                                var contract = GetEthereumContract(hardhatArtifact.ToString(), hardhatArtifact.contractAddress, isTestMode);
+                                var contract = GetEthereumContract(hardhatArtifact.ToString(), contractAddress, isTestMode);
                                 if (contract is not null) contracts.Add(contract);
                                 break;
                             default:

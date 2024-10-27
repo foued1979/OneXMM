@@ -32,13 +32,15 @@ namespace OneXMM.Resources.RawHardhatArtifact
         public IOType[] inputs { get; set; } = new IOType[0];
         public IOType[] outputs { get; set; } = new IOType[0];
         public string name { get; set; }
+        public bool anonymous { get; set; }
         public string stateMutability { get; set; }
         public string type { get; set; }
 
         public override string ToString()
         {
             var stringBuilder = new StringBuilder();
-            stringBuilder.Append($"{{\"name\":\"{name}\",\"stateMutability\":\"{stateMutability}\",\"type\":\"{type}\",");
+            if (string.IsNullOrEmpty(name)) stringBuilder.Append($"{{\"stateMutability\":\"{stateMutability}\",\"type\":\"{type}\",\"anonymous\":{(anonymous ? "true" : "false")},");
+            else stringBuilder.Append($"{{\"name\":\"{name}\",\"stateMutability\":\"{stateMutability}\",\"type\":\"{type}\",\"anonymous\":{(anonymous ? "true" : "false")},");
             stringBuilder.Append($"\"inputs\":[");
 
             foreach (var input in inputs)
@@ -60,6 +62,8 @@ namespace OneXMM.Resources.RawHardhatArtifact
 
     internal sealed class IOType
     {
+        public bool? indexed { get; set; }
+        public Components[]? components { get; set; }
         public string internalType { get; set; }
         public string name { get; set; }
         public string type { get; set; }
@@ -67,8 +71,29 @@ namespace OneXMM.Resources.RawHardhatArtifact
         public override string ToString()
         {
             var stringBuilder = new StringBuilder();
-            stringBuilder.Append($"{{\"name\":\"{name}\",\"internalType\":\"{internalType}\",\"type\":\"{type}\"}},");
+            if (indexed.HasValue) stringBuilder.Append($"{{\"indexed\":{(indexed.Value ? "true" : "false")},");
+            else stringBuilder.Append("{");
+
+            if (components is not null)
+            {
+                stringBuilder.Append($"\"components\":[");
+                foreach (var cmp in components) stringBuilder.Append(cmp.ToString());
+                stringBuilder.Append($"],");
+            }
+            stringBuilder.Append($"\"name\":\"{name}\",\"internalType\":\"{internalType}\",\"type\":\"{type}\"}},");
             return stringBuilder.ToString();
+        }
+    }
+
+    internal sealed class Components
+    {
+        public string internalType { get; set; }
+        public string name { get; set; }
+        public string type { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{\"internalType\":\"{internalType}\",\"name\":\"{name}\",\"type\":\"{type}\"}},";
         }
     }
 }

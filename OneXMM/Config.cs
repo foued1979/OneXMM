@@ -2,7 +2,9 @@
 
 namespace OneXMM
 {
-    using Nethereum.Signer;
+    using OneXMM.Communication;
+    using OneXMM.Communication.MySQLRequests;
+    using OneXMM.Communication.MySQLResults;
     using OneXMM.Configuration;
     using OneXMM.Referential.Assets;
     using OneXMM.Referential.Exchanges;
@@ -16,6 +18,7 @@ namespace OneXMM
         internal readonly static SymbolMapping _symbolMapping;
         internal readonly static SortedDictionary<string, Exchange> Exchanges = new SortedDictionary<string, Exchange>();
         internal readonly static PoolUpdateCfg _poolUpdateCfg;
+        internal readonly static Communication.MySQLConnector _mysqlConnector;
 
         static Config()
         {
@@ -23,6 +26,7 @@ namespace OneXMM
             _referential = SetRefData();
             _symbolMapping = SetSymbolMapping();
             _poolUpdateCfg = SetPoolUpdateCfg();
+            _mysqlConnector = SetMySQL();
         }
 
         public static ExchangeConfig GetExchangeConfig(Exchanges exchange) => _settings.Exchanges[exchange];
@@ -58,6 +62,17 @@ namespace OneXMM
             return GetPair(coin.Symbol, counter.Symbol, coin.Chain);
         }
 
+        public static void InsertQuote(HistoricalResult quote)
+        {
+            _mysqlConnector.InsertData(new Communication.MySQLRequests.InsertDataRequest(MySQLTables.historical_prices.ToString(), 
+                [ [quote.Symbol, quote.Timestamp.ToString(MySQLConnector.DatetimeFormat), quote.Value.ToString()] ]));
+        }
+
+        public static IEnumerable<HistoricalResult> GetHistoricalQuote(Pair pair, DateTime? date = null)
+        {
+            return _mysqlConnector.Get(new GetHistoricalDataRequest(MySQLTables.historical_prices.ToString()) { Symbol = pair.Symbol, Date = date });
+        }
+
         private static ExchangeSettings SetSettings()
         {
             var appPath = Environment.CurrentDirectory;
@@ -82,6 +97,25 @@ namespace OneXMM
         {
             var appPath = Environment.CurrentDirectory;
             return Utils.Utils.ConvertFileToObject<PoolUpdateCfg>(Path.Combine(appPath, "Configuration\\PoolUpdateCfg.json")) ?? throw new Exception("ReferentialData - Issue reading PoolUpdateCfg.");
+        }
+
+        private static MySQLConnector SetMySQL()
+        {
+            var appPath = Path.Combine(Environment.CurrentDirectory, "Configuration\\MySQLSettings.txt");
+            var settings = new Dictionary<string, string>();
+
+            using (var fileReader = new StreamReader(appPath))
+            {
+                var line = "";
+
+                while (!string.IsNullOrEmpty(line = fileReader.ReadLine()))
+                {
+                    var cmp = line.Split('=');
+                    settings.Add(cmp[0], cmp[1]);
+                }
+            }
+
+            return new MySQLConnector(settings["USER"], settings["PASSWORD"], settings["MARKETDATA_DB"], Convert.ToInt32(settings["PORT"]));
         }
     }
 }
