@@ -17,7 +17,7 @@ namespace OneXMM.Referential.Exchanges.Responses
 
         public static Option ToOption(DeribitInstrumentDef optionDef, Blockchains chain)
         {
-            var exchange = Config.Exchanges[OneXMM.Exchanges.Deribit];
+            var exchange = ExchangeServices.GetExchange(OneXMM.Exchanges.Deribit);
             return new Option(optionDef.instrument_id,
                 exchange,
                 optionDef.instrument_name,
@@ -29,7 +29,7 @@ namespace OneXMM.Referential.Exchanges.Responses
 
         public static Futures ToFutures(DeribitInstrumentDef futDef, Blockchains chain)
         {
-            var exchange = Config.Exchanges[OneXMM.Exchanges.Deribit];
+            var exchange = ExchangeServices.GetExchange(OneXMM.Exchanges.Deribit);
             return new Futures(futDef.instrument_id,
                 exchange,
                 futDef.instrument_name,

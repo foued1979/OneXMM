@@ -48,7 +48,8 @@
           "Term": "2W",
           "FixingInterval": "FifteenMinutes"
         }
-      ]
+      ],
+      "CorrelatedVol": false
     },
     {
       "CoinId": 1,
@@ -67,7 +68,8 @@
           "Term": "2W",
           "FixingInterval": "FifteenMinutes"
         }
-      ]
+      ],
+      "CorrelatedVol": false
     }
   ]
 }

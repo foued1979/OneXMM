@@ -15,6 +15,20 @@ namespace OneXMM.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T? ToEnum<T>(this string s) 
+            where T : Enum
+        {
+            var ss = s.ToLower();
+
+            foreach (T e in Enum.GetValues(typeof(T)))
+            {
+                if (e.ToString().ToLower().Equals(ss)) return e;
+            }
+
+            return default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static PoolMaturities[] ToPoolMaturity(this string[] terms)
         {
             var res = new PoolMaturities[terms.Length];

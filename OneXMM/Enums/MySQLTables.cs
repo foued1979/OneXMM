@@ -4,6 +4,8 @@ namespace OneXMM
 {
     public enum MySQLTables
     {
-        historical_prices
+        historical_prices,
+        futures_ref,
+        options_ref,
     }
 }

@@ -8,7 +8,6 @@ namespace OneXMM
     using OneXMM.Communication.MySQLResults;
     using OneXMM.Configuration;
     using OneXMM.Referential.Assets;
-    using OneXMM.Referential.Exchanges;
     using OneXMM.Utils;
 
     public static class Config
@@ -18,11 +17,9 @@ namespace OneXMM
         // The private fields
         private static ExchangeSettings _settings;
 
+        // The internal fields
         internal readonly static Configuration.Referential _referential;
         internal readonly static SymbolMapping _symbolMapping;
-        internal readonly static SortedDictionary<Exchanges, Exchange> Exchanges = new SortedDictionary<Exchanges, Exchange>();
-        internal readonly static Communication.MySQLConnector _mysqlConnector;
-
         internal readonly static SortedDictionary<Pair, Dictionary<FixingIntervals, string[]>> _poolUpdateCfg = new SortedDictionary<Pair, Dictionary<FixingIntervals, string[]>>();
 
         static Config()
@@ -59,33 +56,14 @@ namespace OneXMM
 
                 Tools.AdjustMatuByFixingInterval(matuByFixingInterval);
             }
-            
-            _mysqlConnector = SetMySQL();
-        }
-
-        public static void AddExchange(Exchanges exchange)
-        {
-            if (Exchanges.ContainsKey(exchange)) return;
-
-            switch (exchange)
-            {
-                case OneXMM.Exchanges.Deribit:
-                    Exchanges.Add(exchange, new Deribit(IsTestMode));
-                    break;
-                default:
-                    throw new NotImplementedException($"Unknown {exchange}.");
-            }
         }
 
         public static ExchangeConfig GetExchangeConfig(Exchanges exchange) => _settings.Exchanges[exchange];
 
-        /// <summary>
-        /// Returns the reference exchange for the pair.
-        /// </summary>
-        public static Exchange GetExchange(Pair pair)
+        public static Exchanges GetReferenceExchangeForPair(Pair pair)
         {
-            var pairDef = _referential.PairDefs.First(pd => pd.CoinId == pair.Coin.Id && pd.BaseId == pair.Base.Id);
-            return Exchanges[pairDef.RefExchange];
+            var pairDef = _referential.GetPairDef(pair);
+            return pairDef.RefExchange;
         }
 
         /// <summary>
@@ -93,7 +71,7 @@ namespace OneXMM
         /// </summary>
         public static FixingIntervals[] GetFixingIntervalsForPair(Pair pair)
         {
-            var pairDef = _referential.PairDefs.First(pd => pd.CoinId == pair.Coin.Id && pd.BaseId == pair.Base.Id);
+            var pairDef = _referential.GetPairDef(pair);
             return pairDef.PoolSettings.Select(ps =>  ps.FixingInterval).ToArray();
         }
         
@@ -123,17 +101,33 @@ namespace OneXMM
                 var counter = _referential.Coins.First(c => c.Id == pd.BaseId);
                 if (!_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}/{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.Symbol}/{counter.Symbol}.");
 
-                return new Pair(coin, counter, exchangeSymbols);
+                return new Pair(coin, counter, pd.CorrelatedVol, exchangeSymbols);
             }).ToArray();
+        }
+
+        public static Pair[] GetPairs(string pairSymbol)
+        {
+            return _referential.PairDefs
+                .Select(pd =>
+                {
+                var coin = _referential.Coins.First(c => c.Id == pd.CoinId);
+                var counter = _referential.Coins.First(c => c.Id == pd.BaseId);
+                if (!_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}{Pair.SymbolSeparator}{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.Symbol}/{counter.Symbol}.");
+
+                return new Pair(coin, counter, pd.CorrelatedVol, exchangeSymbols);
+                })
+                .Where(p => p.Symbol.Equals(pairSymbol))
+                .ToArray();
         }
 
         public static Pair GetPair(int coinId, int baseId)
         {
+            var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coinId && pd.BaseId == baseId);
             var coin = _referential.Coins.First(c => c.Id == coinId);
             var counter = _referential.Coins.First(c => c.Id == baseId);
-            if (!_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}/{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.Symbol}/{counter.Symbol}.");
+            if (!_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}{Pair.SymbolSeparator}{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.Symbol}/{counter.Symbol}.");
 
-            return new Pair(coin, counter, exchangeSymbols);
+            return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
         }
 
         public static Pair GetPair(string coinSymbol, string counterSymbol, Blockchains chain)
@@ -141,25 +135,16 @@ namespace OneXMM
             var coin = _referential.Coins.FirstOrDefault(c => c.Symbol.Equals(coinSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
             var counter = _referential.Coins.FirstOrDefault(c => c.Symbol.Equals(counterSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
 
-            if (coin is null || counter is null || !_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}/{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coinSymbol}/{counterSymbol}.");
-            return new Pair(coin, counter, exchangeSymbols);
+            var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coin.Id && pd.BaseId == counter.Id);
+
+            if (coin is null || counter is null || !_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}{Pair.SymbolSeparator}{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coinSymbol}/{counterSymbol}.");
+            return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
         }
 
         public static Pair GetPair(Coin coin, Coin counter)
         {
             if (coin.Chain != counter.Chain) return null;
-            return GetPair(coin.Symbol, counter.Symbol, coin.Chain);
-        }
-
-        public static void InsertQuote(HistoricalResult quote)
-        {
-            _mysqlConnector.InsertData(new Communication.MySQLRequests.InsertDataRequest(MySQLTables.historical_prices.ToString(), 
-                [ [quote.Symbol, quote.Timestamp.ToString(MySQLConnector.DatetimeFormat), quote.Value.ToString()] ]));
-        }
-
-        public static IEnumerable<HistoricalResult> GetHistoricalQuote(Pair pair, DateTime? date = null)
-        {
-            return _mysqlConnector.Get(new GetHistoricalDataRequest(MySQLTables.historical_prices.ToString()) { Symbol = pair.Symbol, Date = date });
+            return GetPair(coin.Id, counter.Id);
         }
 
         private static ExchangeSettings SetSettings()
@@ -180,25 +165,6 @@ namespace OneXMM
         {
             var appPath = Environment.CurrentDirectory;
             return Utils.Utils.ConvertFileToObject<SymbolMapping>(Path.Combine(appPath, "Configuration\\SymbolMapping.json")) ?? throw new Exception("ReferentialData - Issue reading SymbolMapping.");
-        }
-
-        private static MySQLConnector SetMySQL()
-        {
-            var appPath = Path.Combine(Environment.CurrentDirectory, "Configuration\\MySQLSettings.txt");
-            var settings = new Dictionary<string, string>();
-
-            using (var fileReader = new StreamReader(appPath))
-            {
-                var line = "";
-
-                while (!string.IsNullOrEmpty(line = fileReader.ReadLine()))
-                {
-                    var cmp = line.Split('=');
-                    settings.Add(cmp[0], cmp[1]);
-                }
-            }
-
-            return new MySQLConnector(settings["USER"], settings["PASSWORD"], settings["MARKETDATA_DB"], Convert.ToInt32(settings["PORT"]));
         }
     }
 }

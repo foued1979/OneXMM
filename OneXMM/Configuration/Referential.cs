@@ -8,5 +8,7 @@ namespace OneXMM.Configuration
     {
         public Coin[] Coins { get; set; } = [];
         public PairDef[] PairDefs { get; set; } = [];
+
+        public PairDef GetPairDef(Pair pair) => PairDefs.First(pd => pd.CoinId == pair.Coin.Id && pd.BaseId == pair.Base.Id);
     }
 }

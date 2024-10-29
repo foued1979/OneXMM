@@ -2,11 +2,11 @@
 
 namespace OneXMM
 {
+    using OneXMM.Communication;
     using OneXMM.Interfaces;
     using OneXMM.Pricing;
     using OneXMM.Referential;
     using OneXMM.Referential.Assets;
-    using OneXMM.Referential.Exchanges;
 
     public static class Factory
     {
@@ -34,6 +34,25 @@ namespace OneXMM
 
             Task.WaitAll(fillTasks);
             return newSurfaceBuilder;
+        }
+
+        internal static MySQLConnector CreateMySQLConnector()
+        {
+            var appPath = Path.Combine(Environment.CurrentDirectory, "Configuration\\MySQLSettings.txt");
+            var settings = new Dictionary<string, string>();
+
+            using (var fileReader = new StreamReader(appPath))
+            {
+                var line = "";
+
+                while (!string.IsNullOrEmpty(line = fileReader.ReadLine()))
+                {
+                    var cmp = line.Split('=');
+                    settings.Add(cmp[0], cmp[1]);
+                }
+            }
+
+            return new MySQLConnector(settings["USER"], settings["PASSWORD"], settings["MARKETDATA_DB"], Convert.ToInt32(settings["PORT"]));
         }
     }
 }

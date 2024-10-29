@@ -6,16 +6,19 @@ namespace OneXMM.Referential.Assets
 
     public sealed class Pair : IComparable<Pair>
     {
-        public string Symbol => $"{Coin.Symbol}/{Base.Symbol}";
+        public const char SymbolSeparator = '/';
+        public string Symbol => $"{Coin.Symbol}{SymbolSeparator}{Base.Symbol}";
         public Blockchains Chain => Coin.Chain;
         public Coin Coin { get; }
         public Coin Base { get; }
+        public bool CorrelatedVol { get; }
         public Dictionary<SymbolTypes, Dictionary<Exchanges, string>> MappingExchangeSymbols { get; }
 
-        public Pair(Coin coin, Coin counter, Dictionary<SymbolTypes, Dictionary<Exchanges, string>> mappingExchangeSymbols)
+        public Pair(Coin coin, Coin counter, bool correlatedVol, Dictionary<SymbolTypes, Dictionary<Exchanges, string>> mappingExchangeSymbols)
         {
             Coin = coin;
             Base = counter;
+            CorrelatedVol = correlatedVol;
             MappingExchangeSymbols = mappingExchangeSymbols;
         }
 

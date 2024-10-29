@@ -5,6 +5,7 @@ namespace OneXMM.Communication
 {
     internal sealed class MySQLConnector
     {
+        public const string DateFormat = "yyyy-MM-dd";
         public const string DatetimeFormat = "yyyy-MM-dd HH:mm:ss";
 
         private MySql.Data.MySqlClient.MySqlConnection _connection;
@@ -23,10 +24,12 @@ namespace OneXMM.Communication
 
                 using (var reader = cmd.ExecuteReader())
                 {
-                    if (tableRequest.GetResults(reader).Count() == 0) 
-                    { 
-                        reader.Close(); 
-                        CreateTables(_connection); 
+                    var tables = tableRequest.GetResults(reader);
+                    reader.Close();
+
+                    foreach (MySQLTables table in Enum.GetValues(typeof(MySQLTables)))
+                    {
+                        if (!tables.Any(t => t.TableName.Equals(table.ToString()))) CreateTables(_connection, table);
                     }
                 }
             }
@@ -56,11 +59,20 @@ namespace OneXMM.Communication
             }
         }
 
-        public static void CreateTables(MySql.Data.MySqlClient.MySqlConnection connection)
+        public static void CreateTables(MySql.Data.MySqlClient.MySqlConnection connection, MySQLTables table)
         {
             using (var cmd = connection.CreateCommand())
             {
-                cmd.CommandText = $"CREATE TABLE {MySQLTables.historical_prices.ToString()}(symbol varchar(30) not null, date Datetime not null, price double not null, CONSTRAINT unique_quote UNIQUE (symbol,date));";
+                switch (table)
+                {
+                    case MySQLTables.historical_prices:
+                        cmd.CommandText = $"CREATE TABLE {MySQLTables.historical_prices.ToString()}(symbol varchar(30) not null, date datetime not null, price double not null, CONSTRAINT unique_quote UNIQUE (symbol,date));";
+                        break;
+                    case MySQLTables.futures_ref:
+                        cmd.CommandText = $"CREATE TABLE {MySQLTables.futures_ref.ToString()}(id int not null auto_increment, symbol varchar(40) not null, undl varchar(20) not null, expiry string not null, exchange varchar(20) not null, inputdate datetime not null, CONSTRAINT unique_futures UNIQUE (symbol,exchange));";
+                        break;
+                }
+                
                 cmd.ExecuteNonQuery();
             }
         }

@@ -8,6 +8,7 @@ namespace OneXMM.Configuration
         public int BaseId { get; set; } = -1;
         public Exchanges RefExchange { get; set; } = Exchanges.None;
         public PoolSettings[] PoolSettings { get; set; } = [];
+        public bool CorrelatedVol { get; set; } = false;
     }
 
     public struct PoolSettings

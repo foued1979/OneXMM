@@ -2,10 +2,12 @@
 
 namespace OneXMM.Referential
 {
+    using OneXMM.Communication;
+    using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;
     using OneXMM.Referential.Exchanges;
 
-    public sealed class Futures
+    public sealed class Futures : IMySQLData
     {
         public static Futures GetNoExpiryFutures(Pair pair, DateTime asof) => new Futures(pair, asof);
         public int Id { get; }
@@ -39,6 +41,13 @@ namespace OneXMM.Referential
         {
             var expiry = (Expiry - time).TotalDays / 365.0;
             Yield = (marketPrice / spot - 1.0) / expiry;
+        }
+
+        public string[] ToFields()
+        {
+            // Table format in MySQLConnector class
+            // Current format: symbol, undl, expiry, exchange
+            return [Symbol, Pair.Symbol, Expiry.ToString(MySQLConnector.DateFormat), Exchange!.Name];
         }
     }
 }

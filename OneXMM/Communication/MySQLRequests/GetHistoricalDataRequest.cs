@@ -4,7 +4,6 @@ using MySql.Data.MySqlClient;
 
 namespace OneXMM.Communication.MySQLRequests
 {
-    using Mysqlx.Session;
     using OneXMM.Communication.MySQLResults;
 
     internal sealed class GetHistoricalDataRequest : MySQLRequest<HistoricalResult>
