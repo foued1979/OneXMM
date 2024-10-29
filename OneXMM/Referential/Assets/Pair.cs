@@ -4,7 +4,7 @@ namespace OneXMM.Referential.Assets
 {
     using OneXMM;
 
-    public sealed class Pair
+    public sealed class Pair : IComparable<Pair>
     {
         public string Symbol => $"{Coin.Symbol}/{Base.Symbol}";
         public Blockchains Chain => Coin.Chain;
@@ -36,5 +36,15 @@ namespace OneXMM.Referential.Assets
         }
 
         public override int GetHashCode() => Symbol.GetHashCode();
+
+        public int CompareTo(Pair? other)
+        {
+            if (other is null) return -1;
+            if (other.Chain != Chain) return Chain.CompareTo(other.Chain);
+
+            if (other.Coin.Equals(Coin)) return Base.CompareTo(other.Base);
+
+            return Coin.CompareTo(other.Coin);
+        }
     }
 }

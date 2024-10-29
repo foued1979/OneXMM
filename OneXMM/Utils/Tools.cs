@@ -109,6 +109,34 @@ namespace OneXMM.Utils
             return res;
         }
 
+        /// <summary>
+        /// Adds terms of shorter fixing intervals to longer fixing intervals.
+        /// E.g. if we have 1D updated every 5 minutes, and 1W updated every 10 minutes
+        /// We add 1D to the 1W fixing interval so that, when 10 minutes ellapses, we know
+        /// that we have to update 1W and 1D.
+        /// </summary>
+        public static void AdjustMatuByFixingInterval(Dictionary<FixingIntervals, string[]> matuByFixingInterval)
+        {
+            foreach (FixingIntervals fixingInterval in Enum.GetValues(typeof(FixingIntervals)))
+            {
+                if (matuByFixingInterval.TryGetValue(fixingInterval, out var maturitiesForInterval))
+                {
+                    foreach (var otherFixingInterval in matuByFixingInterval.Keys)
+                    {
+                        if (otherFixingInterval.CompareTo(fixingInterval) > 0)
+                        {
+                            foreach (var matu in maturitiesForInterval)
+                            {
+                                if (matuByFixingInterval[otherFixingInterval].Contains(matu)) continue;
+                                matuByFixingInterval[otherFixingInterval] = matuByFixingInterval[otherFixingInterval].Append(matu).ToArray();
+                            }
+                                
+                        }
+                    }
+                }
+            }
+        }
+
         public static T[] RemoveElementAt<T>(this T[] array, int index)
         {
             if (index >= array.Length) return array;

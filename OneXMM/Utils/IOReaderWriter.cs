@@ -2,7 +2,7 @@
 
 namespace OneXMM.Utils
 {
-    internal static partial class Utils
+    public static partial class Utils
     {
         public static void Serialize<T>(T objectToSerialize, string filePath, string dateTimeFormat = "") where T : class
         {

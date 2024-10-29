@@ -2,7 +2,7 @@
 
 namespace OneXMM
 {
-    internal enum DataSrouces
+    internal enum DataSources
     {
         CoinMarketCap
     }

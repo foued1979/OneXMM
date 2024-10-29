@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace OneXMM.Utils
 {
-    internal static partial class Utils
+    public static partial class Utils
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TAttr? GetAttributeForEnum<TEnum, TAttr>(this TEnum e)

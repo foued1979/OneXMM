@@ -54,9 +54,9 @@ namespace OneXMM.Pricing
             _smiles[option.Expiry].AddOption(option);
         }
 
-        public VolatilitySurface Calibrate(VolUpdateTempos updateTempo)
+        public VolatilitySurface Calibrate(FixingIntervals updateTempo)
         {
-            GetRequiredSmiles(updateTempo, _smiles, out var smiles);
+            GetRequiredSmiles(updateTempo, Pair, _smiles, out var smiles);
 
             // We get futures prices and we compute the Yields
             var futuresTimestampPrev = Exchange.UseUniversalTime ? DateTime.UtcNow : DateTime.Now;
@@ -155,11 +155,11 @@ namespace OneXMM.Pricing
             return this as VolatilitySurface;
         }
 
-        private static void GetRequiredSmiles(VolUpdateTempos updateTempo, SortedDictionary<DateTime, SABR> allSmiles, out Dictionary<DateTime, SABR> requiredSmiles)
+        private static void GetRequiredSmiles(FixingIntervals updateTempo, Pair pair, SortedDictionary<DateTime, SABR> allSmiles, out Dictionary<DateTime, SABR> requiredSmiles)
         {
             requiredSmiles = new Dictionary<DateTime, SABR>(allSmiles.Count);
 
-            var poolMaturities = Config._poolUpdateCfg.TermByUpdateFreq[updateTempo].ToPoolMaturity();
+            var poolMaturities = Config._poolUpdateCfg[pair][updateTempo].ToPoolMaturity();
             var today = allSmiles.First().Key.Kind == DateTimeKind.Utc
                 ? new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 0, 0, 0, DateTimeKind.Utc)
                 : DateTime.Today;

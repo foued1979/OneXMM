@@ -21,6 +21,7 @@ namespace OneXMM
         getPendingBridgesInForUser,
         getPendingBridgesOut,
         getPendingBridgesOutForUser,
+        massAllocation,
         ownerTransfersBack,
         removeETHDepositAuthorization,
         removeETHExchangeAuthorization,

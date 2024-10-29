@@ -10,19 +10,6 @@ namespace OneXMM
 
     public static class Factory
     {
-        public static IExchange CreateExchange(Exchanges exchange, bool isTestMode)
-        {
-            switch (exchange)
-            {
-                case Exchanges.Deribit:
-                    var deribit = new Deribit(isTestMode);
-                    Config.Exchanges.Add(deribit.Name, deribit);
-                    return deribit;
-                default:
-                    throw new NotImplementedException($"Unknown {exchange}.");
-            }
-        }
-
         public static VolatilitySurface? GetVolatilitySurface(DateTime asof)
         {
             var surfaceDate = new DateTime(asof.Year, asof.Month, asof.Day, asof.ToUniversalTime().Hour, 0, 0, DateTimeKind.Utc);

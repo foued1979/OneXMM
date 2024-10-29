@@ -2,7 +2,7 @@
 
 namespace OneXMM.Utils
 {
-    internal static partial class Utils
+    public static partial class Utils
     {
         public static TimeSpan ToTimeSpan(this string val)
         {

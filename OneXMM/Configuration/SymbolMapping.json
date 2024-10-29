@@ -11,15 +11,15 @@
         "Deribit": "btc_usd"
       }
     },
-    "BTC/USDT": {
+    "ETH/USD": {
       "Option": {
-        "Deribit": "BTC"
+        "Deribit": "ETH"
       },
       "Future": {
-        "Deribit": "BTC"
+        "Deribit": "ETH"
       },
-      "Spot": {
-        "Deribit": "BTC_USDT"
+      "Index": {
+        "Deribit": "eth_usd"
       }
     }
   }

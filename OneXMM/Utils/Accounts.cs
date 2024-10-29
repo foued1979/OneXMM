@@ -5,7 +5,7 @@ namespace OneXMM.Utils
 {
     using OneXMM.Interfaces;
     
-    internal static partial class Utils
+    public static partial class Utils
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IAccount GetEthereumAccount(int chainId)

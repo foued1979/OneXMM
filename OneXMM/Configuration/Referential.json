@@ -1,35 +1,73 @@
 {
   "Coins": [
     {
+      "Id": 0,
       "Symbol": "BTC",
       "Address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
       "Chain": "Ethereum"
     },
     {
+      "Id": 1,
+      "Symbol": "ETH",
+      "Address": "0x",
+      "Chain": "Ethereum"
+    },
+    {
+      "Id": 2,
       "Symbol": "ETH",
       "Address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
       "Chain": "Ethereum"
     },
     {
+      "Id": 3,
       "Symbol": "USDT",
       "Address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
       "Chain": "Ethereum"
     },
     {
+      "Id": 4,
       "Symbol": "USD",
       "Address": ""
     }
   ],
   "PairDefs": [
     {
-      "Coin": "BTC",
-      "Base": "USD",
-      "Chain": "Ethereum"
+      "CoinId": 0,
+      "BaseId": 4,
+      "RefExchange": "Deribit",
+      "PoolSettings": [
+        {
+          "Term": "1D",
+          "FixingInterval": "FiveMinutes"
+        },
+        {
+          "Term": "1W",
+          "FixingInterval": "TenMinutes"
+        },
+        {
+          "Term": "2W",
+          "FixingInterval": "FifteenMinutes"
+        }
+      ]
     },
     {
-      "Coin": "ETH",
-      "Base": "USD",
-      "Chain": "Ethereum"
+      "CoinId": 1,
+      "BaseId": 4,
+      "RefExchange": "Deribit",
+      "PoolSettings": [
+        {
+          "Term": "1D",
+          "FixingInterval": "FiveMinutes"
+        },
+        {
+          "Term": "1W",
+          "FixingInterval": "TenMinutes"
+        },
+        {
+          "Term": "2W",
+          "FixingInterval": "FifteenMinutes"
+        }
+      ]
     }
   ]
 }
