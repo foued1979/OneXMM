@@ -8,7 +8,7 @@ Token has the usual IERC20 functions since it is an ERC20 Token. On top of the E
 **address** *token* &emsp; The address of the approved token to be added
 **uint8** *decimals* $emsp; The number of decimals for the approved token to add
 
-**Description**
+**Description**<br/>
 Adds a token to the list of ApprovedTokens. An approved token is a token which can be exchanged against 1XMM Token.
 
 
