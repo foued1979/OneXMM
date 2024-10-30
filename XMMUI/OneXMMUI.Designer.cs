@@ -35,11 +35,21 @@
             hardhatToolStripMenuItem = new ToolStripMenuItem();
             contractsControl = new TabControl();
             tokenTab = new TabPage();
-            tabPage2 = new TabPage();
+            tokenSendBtn = new Button();
+            tokenFunctionDescrGroup = new GroupBox();
+            tokenFlowLayoutPanel = new FlowLayoutPanel();
+            label2 = new Label();
+            tokenFunctionDescrLbl = new Label();
+            tokenParameterGrid = new DataGridView();
+            tokenParamNameCol = new DataGridViewTextBoxColumn();
+            tokenParamValueCol = new DataGridViewTextBoxColumn();
             tokenFunctionList = new ListBox();
+            tabPage2 = new TabPage();
             mainMenu.SuspendLayout();
             contractsControl.SuspendLayout();
             tokenTab.SuspendLayout();
+            tokenFunctionDescrGroup.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)tokenParameterGrid).BeginInit();
             SuspendLayout();
             // 
             // mainMenu
@@ -62,20 +72,20 @@
             // 
             selectBlockchainToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { ethereumToolStripMenuItem, hardhatToolStripMenuItem });
             selectBlockchainToolStripMenuItem.Name = "selectBlockchainToolStripMenuItem";
-            selectBlockchainToolStripMenuItem.Size = new Size(180, 22);
+            selectBlockchainToolStripMenuItem.Size = new Size(166, 22);
             selectBlockchainToolStripMenuItem.Text = "Select Blockchain";
             // 
             // ethereumToolStripMenuItem
             // 
             ethereumToolStripMenuItem.Name = "ethereumToolStripMenuItem";
-            ethereumToolStripMenuItem.Size = new Size(180, 22);
+            ethereumToolStripMenuItem.Size = new Size(125, 22);
             ethereumToolStripMenuItem.Text = "Ethereum";
             ethereumToolStripMenuItem.Click += ethereumToolStripMenuItem_Click;
             // 
             // hardhatToolStripMenuItem
             // 
             hardhatToolStripMenuItem.Name = "hardhatToolStripMenuItem";
-            hardhatToolStripMenuItem.Size = new Size(180, 22);
+            hardhatToolStripMenuItem.Size = new Size(125, 22);
             hardhatToolStripMenuItem.Text = "Hardhat";
             hardhatToolStripMenuItem.Click += hardhatToolStripMenuItem_Click;
             // 
@@ -87,29 +97,105 @@
             contractsControl.Location = new Point(12, 27);
             contractsControl.Name = "contractsControl";
             contractsControl.SelectedIndex = 0;
-            contractsControl.Size = new Size(776, 411);
+            contractsControl.Size = new Size(776, 437);
             contractsControl.TabIndex = 1;
             // 
             // tokenTab
             // 
+            tokenTab.Controls.Add(tokenSendBtn);
+            tokenTab.Controls.Add(tokenFunctionDescrGroup);
+            tokenTab.Controls.Add(tokenParameterGrid);
             tokenTab.Controls.Add(tokenFunctionList);
             tokenTab.Location = new Point(4, 24);
             tokenTab.Name = "tokenTab";
             tokenTab.Padding = new Padding(3);
-            tokenTab.Size = new Size(768, 383);
+            tokenTab.Size = new Size(768, 409);
             tokenTab.TabIndex = 0;
             tokenTab.Text = "Token";
             tokenTab.UseVisualStyleBackColor = true;
             // 
-            // tabPage2
+            // tokenSendBtn
             // 
-            tabPage2.Location = new Point(4, 24);
-            tabPage2.Name = "tabPage2";
-            tabPage2.Padding = new Padding(3);
-            tabPage2.Size = new Size(192, 72);
-            tabPage2.TabIndex = 1;
-            tabPage2.Text = "tabPage2";
-            tabPage2.UseVisualStyleBackColor = true;
+            tokenSendBtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            tokenSendBtn.BackColor = Color.YellowGreen;
+            tokenSendBtn.Location = new Point(641, 356);
+            tokenSendBtn.Name = "tokenSendBtn";
+            tokenSendBtn.Size = new Size(115, 29);
+            tokenSendBtn.TabIndex = 3;
+            tokenSendBtn.Text = "Send";
+            tokenSendBtn.UseVisualStyleBackColor = false;
+            tokenSendBtn.Click += tokenSendBtn_Click;
+            // 
+            // tokenFunctionDescrGroup
+            // 
+            tokenFunctionDescrGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tokenFunctionDescrGroup.BackColor = Color.Linen;
+            tokenFunctionDescrGroup.Controls.Add(tokenFlowLayoutPanel);
+            tokenFunctionDescrGroup.Controls.Add(label2);
+            tokenFunctionDescrGroup.Controls.Add(tokenFunctionDescrLbl);
+            tokenFunctionDescrGroup.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            tokenFunctionDescrGroup.Location = new Point(162, 6);
+            tokenFunctionDescrGroup.Name = "tokenFunctionDescrGroup";
+            tokenFunctionDescrGroup.Size = new Size(600, 145);
+            tokenFunctionDescrGroup.TabIndex = 2;
+            tokenFunctionDescrGroup.TabStop = false;
+            tokenFunctionDescrGroup.Text = "Function Description";
+            // 
+            // tokenFlowLayoutPanel
+            // 
+            tokenFlowLayoutPanel.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            tokenFlowLayoutPanel.Location = new Point(6, 81);
+            tokenFlowLayoutPanel.Name = "tokenFlowLayoutPanel";
+            tokenFlowLayoutPanel.Size = new Size(588, 58);
+            tokenFlowLayoutPanel.TabIndex = 2;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label2.Location = new Point(6, 63);
+            label2.Name = "label2";
+            label2.Size = new Size(104, 15);
+            label2.TabIndex = 1;
+            label2.Text = "Input Parameters";
+            // 
+            // tokenFunctionDescrLbl
+            // 
+            tokenFunctionDescrLbl.AutoSize = true;
+            tokenFunctionDescrLbl.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            tokenFunctionDescrLbl.Location = new Point(6, 19);
+            tokenFunctionDescrLbl.Name = "tokenFunctionDescrLbl";
+            tokenFunctionDescrLbl.Size = new Size(12, 15);
+            tokenFunctionDescrLbl.TabIndex = 0;
+            tokenFunctionDescrLbl.Text = "-";
+            // 
+            // tokenParameterGrid
+            // 
+            tokenParameterGrid.AllowUserToAddRows = false;
+            tokenParameterGrid.AllowUserToDeleteRows = false;
+            tokenParameterGrid.AllowUserToResizeRows = false;
+            tokenParameterGrid.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            tokenParameterGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            tokenParameterGrid.Columns.AddRange(new DataGridViewColumn[] { tokenParamNameCol, tokenParamValueCol });
+            tokenParameterGrid.Location = new Point(162, 157);
+            tokenParameterGrid.Name = "tokenParameterGrid";
+            tokenParameterGrid.Size = new Size(414, 228);
+            tokenParameterGrid.TabIndex = 1;
+            // 
+            // tokenParamNameCol
+            // 
+            tokenParamNameCol.HeaderText = "Name";
+            tokenParamNameCol.MaxInputLength = 40;
+            tokenParamNameCol.Name = "tokenParamNameCol";
+            tokenParamNameCol.ReadOnly = true;
+            tokenParamNameCol.Width = 125;
+            // 
+            // tokenParamValueCol
+            // 
+            tokenParamValueCol.HeaderText = "Value";
+            tokenParamValueCol.MaxInputLength = 6000;
+            tokenParamValueCol.Name = "tokenParamValueCol";
+            tokenParamValueCol.Width = 225;
             // 
             // tokenFunctionList
             // 
@@ -118,23 +204,38 @@
             tokenFunctionList.ItemHeight = 15;
             tokenFunctionList.Location = new Point(6, 6);
             tokenFunctionList.Name = "tokenFunctionList";
-            tokenFunctionList.Size = new Size(125, 364);
+            tokenFunctionList.Size = new Size(150, 379);
             tokenFunctionList.TabIndex = 0;
+            tokenFunctionList.SelectedIndexChanged += tokenFunctionList_SelectedIndexChanged;
+            // 
+            // tabPage2
+            // 
+            tabPage2.Location = new Point(4, 24);
+            tabPage2.Name = "tabPage2";
+            tabPage2.Padding = new Padding(3);
+            tabPage2.Size = new Size(768, 409);
+            tabPage2.TabIndex = 1;
+            tabPage2.Text = "tabPage2";
+            tabPage2.UseVisualStyleBackColor = true;
             // 
             // OneXMMUI
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(800, 476);
             Controls.Add(contractsControl);
             Controls.Add(mainMenu);
             MainMenuStrip = mainMenu;
+            MinimumSize = new Size(816, 515);
             Name = "OneXMMUI";
             Text = "1XMM UI";
             mainMenu.ResumeLayout(false);
             mainMenu.PerformLayout();
             contractsControl.ResumeLayout(false);
             tokenTab.ResumeLayout(false);
+            tokenFunctionDescrGroup.ResumeLayout(false);
+            tokenFunctionDescrGroup.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)tokenParameterGrid).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -150,5 +251,13 @@
         private TabPage tokenTab;
         private TabPage tabPage2;
         private ListBox tokenFunctionList;
+        private GroupBox tokenFunctionDescrGroup;
+        private DataGridView tokenParameterGrid;
+        private FlowLayoutPanel tokenFlowLayoutPanel;
+        private Label label2;
+        private Label tokenFunctionDescrLbl;
+        private Button tokenSendBtn;
+        private DataGridViewTextBoxColumn tokenParamNameCol;
+        private DataGridViewTextBoxColumn tokenParamValueCol;
     }
 }

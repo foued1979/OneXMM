@@ -3,6 +3,7 @@ using System.Reflection;
 
 namespace OneXMM.Factories
 {
+    using Nethereum.ABI.Model;
     using Nethereum.Contracts;
     using Nethereum.Web3;
     using OneXMM.Attributes;
@@ -21,6 +22,11 @@ namespace OneXMM.Factories
 #if !DEBUG
             _contracts.Add(Blockchains.Ethereum, GetEthereumLikeContracts(Blockchains.Ethereum, isTestMode));
 #endif
+        }
+
+        public static FunctionABI[] GetTokenContractFunctions(Blockchains blockchain)
+        {
+            return _tokenContracts[blockchain].ContractBuilder.ContractABI.Functions;
         }
 
         public static IRequestManager<FType> CreateRequestManager<FType>(Blockchains blockchain)
@@ -60,7 +66,7 @@ namespace OneXMM.Factories
                             {
                                 case Blockchains.Ethereum:
                                 case Blockchains.HardHat:
-                                    var contract = GetEthereumContract(hardhatArtifact.ToString(), contractAddress, isTestMode);
+                                    var contract = GetEthereumContract(blockchain, hardhatArtifact.ToString(), contractAddress, isTestMode);
                                     if (contract is null) throw new Exception($"ContractFactory - Contrac is null for blockchain {blockchain.ToString()} and address {contractAddress}.");
                                     _tokenContracts.Add(blockchain, contract);
                                     break;
@@ -88,7 +94,7 @@ namespace OneXMM.Factories
             throw new NotImplementedException();
         }
 
-        private static Contract? GetEthereumContract(string abi, string contractAddress, bool isTestMode)
+        private static Contract? GetEthereumContract(Blockchains blockchain, string abi, string contractAddress, bool isTestMode)
         {
             var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("jsonrpc", "2.0");
@@ -106,7 +112,7 @@ namespace OneXMM.Factories
             var uri = isTestMode ? attr.TestUrl : attr.LiveUrl;
 
             var rpc = new Nethereum.JsonRpc.Client.RpcClient(new Uri(uri), httpClient);
-            var web3 = new Web3(new EthereumAccount((int)Blockchains.Ethereum).Account, rpc);
+            var web3 = new Web3(new EthereumAccount((int)blockchain).Account, rpc);
             return web3.Eth.GetContract(abi, contractAddress);
         }
     }

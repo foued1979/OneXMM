@@ -1,4 +1,5 @@
 ﻿using Nethereum.Contracts;
+using Nethereum.Hex.HexTypes;
 using System;
 
 namespace OneXMM.Communication
@@ -52,7 +53,10 @@ namespace OneXMM.Communication
                     }
                     else
                     {
-                        return function.SendTransactionAndWaitForReceiptAsync(_accountAddress, new CancellationToken(), parameters).ConfigureAwait(false).GetAwaiter().GetResult();
+                        var gasEstimate = function.EstimateGasAsync(parameters).GetAwaiter().GetResult();
+                        var value = new HexBigInteger("0x0");
+
+                        return function.SendTransactionAndWaitForReceiptAsync(_accountAddress, gasEstimate, value, new CancellationToken(), parameters).ConfigureAwait(false).GetAwaiter().GetResult();
                     }
                 }
                 catch
