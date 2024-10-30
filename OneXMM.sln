@@ -10,10 +10,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configuration", "Configurat
 		OneXMM\Configuration\ExchangeSettings.json = OneXMM\Configuration\ExchangeSettings.json
 		OneXMM\Configuration\MySQLSettings.txt = OneXMM\Configuration\MySQLSettings.txt
 		OneXMM\Configuration\PoolUpdateCfg.json = OneXMM\Configuration\PoolUpdateCfg.json
+		XMMUI\Configuration\Settings.json = XMMUI\Configuration\Settings.json
 		OneXMM\Configuration\SymbolMapping.json = OneXMM\Configuration\SymbolMapping.json
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Launcher", "Launcher\Launcher.csproj", "{6AC6BDB6-EEC5-417C-95B2-497460E7E428}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XMMUI", "XMMUI\XMMUI.csproj", "{C8A947B5-B015-4558-A386-6FE0C57F3AD9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +32,10 @@ Global
 		{6AC6BDB6-EEC5-417C-95B2-497460E7E428}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6AC6BDB6-EEC5-417C-95B2-497460E7E428}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6AC6BDB6-EEC5-417C-95B2-497460E7E428}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8A947B5-B015-4558-A386-6FE0C57F3AD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8A947B5-B015-4558-A386-6FE0C57F3AD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8A947B5-B015-4558-A386-6FE0C57F3AD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8A947B5-B015-4558-A386-6FE0C57F3AD9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

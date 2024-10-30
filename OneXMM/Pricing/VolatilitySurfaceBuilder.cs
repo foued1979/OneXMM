@@ -19,7 +19,7 @@ namespace OneXMM.Pricing
 
         public void UpdateFutures(string symbol, DateTime asof, double spot, double marketPrice)
         {
-            if (Exchange.UseUniversalTime) asof = asof.ToUniversalTime();
+            if (Exchange.ExchangeUsesUniversalTime) asof = asof.ToUniversalTime();
 
             if (_futuresBySymbol.TryGetValue(symbol, out var futures))
             {
@@ -54,15 +54,15 @@ namespace OneXMM.Pricing
             _smiles[option.Expiry].AddOption(option);
         }
 
-        public VolatilitySurface Calibrate(FixingIntervals updateTempo)
+        public IVolatilitySurface Calibrate(FixingIntervals updateTempo)
         {
             GetRequiredSmiles(updateTempo, Pair, _smiles, out var smiles);
 
             // We get futures prices and we compute the Yields
-            var futuresTimestampPrev = Exchange.UseUniversalTime ? DateTime.UtcNow : DateTime.Now;
+            var futuresTimestampPrev = Exchange.ExchangeUsesUniversalTime ? DateTime.UtcNow : DateTime.Now;
             var futures = GetFutures(smiles);
             var spot = Exchange.GetSpot(Pair);
-            var futuresTimestamp = futuresTimestampPrev.AddSeconds(((Exchange.UseUniversalTime ? DateTime.UtcNow: DateTime.Now) - futuresTimestampPrev).TotalSeconds * 0.5);
+            var futuresTimestamp = futuresTimestampPrev.AddSeconds(((Exchange.ExchangeUsesUniversalTime ? DateTime.UtcNow: DateTime.Now) - futuresTimestampPrev).TotalSeconds * 0.5);
 
             // Since we average the timestamp of the Futures, we update surface date and smile dates
             SurfaceDate = futuresTimestamp;
@@ -87,7 +87,7 @@ namespace OneXMM.Pricing
                 totalOptionNb += SABRToCalibrate.Last().Value.Length;
             }
 
-            var calibrationTimestampStart = Exchange.UseUniversalTime ? DateTime.UtcNow : DateTime.Now;
+            var calibrationTimestampStart = Exchange.ExchangeUsesUniversalTime ? DateTime.UtcNow : DateTime.Now;
             SortedDictionary<Option, double>? optionPrices = null;
 
             // We need to have at least 85% of the number of options that have been identified
@@ -98,7 +98,7 @@ namespace OneXMM.Pricing
 
             spot = Exchange.GetSpot(Pair);
 
-            var calibrationTimestamp = Exchange.UseUniversalTime ? DateTime.UtcNow : DateTime.Now;
+            var calibrationTimestamp = Exchange.ExchangeUsesUniversalTime ? DateTime.UtcNow : DateTime.Now;
 
             // We average time for the calibration
             calibrationTimestamp = calibrationTimestampStart.AddSeconds(0.5 * (calibrationTimestamp - calibrationTimestampStart).TotalSeconds);
@@ -152,7 +152,7 @@ namespace OneXMM.Pricing
                 Smiles.Add(sabr.SmileExpiry, sabr);
             }
 
-            return this as VolatilitySurface;
+            return this;
         }
 
         private static void GetRequiredSmiles(FixingIntervals updateTempo, Pair pair, SortedDictionary<DateTime, SABR> allSmiles, out Dictionary<DateTime, SABR> requiredSmiles)
@@ -211,7 +211,7 @@ namespace OneXMM.Pricing
 
         private static void UpdateFuturesPrices(double spot, DateTime asof, SortedDictionary<DateTime, Futures> futures, IExchange exchange)
         {
-            if (asof.Kind != DateTimeKind.Utc && exchange.UseUniversalTime) throw new Exception("VolatilitySurfaceBuilder - Dates are inconsistent.");
+            if (asof.Kind != DateTimeKind.Utc && exchange.ExchangeUsesUniversalTime) throw new Exception("VolatilitySurfaceBuilder - Dates are inconsistent.");
             if (futures.Count <= 4)
             {
                 var futuresPriceTasks = new List<Task>(4);

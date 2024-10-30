@@ -7,7 +7,7 @@ namespace OneXMM.Referential.Assets
     public sealed class Pair : IComparable<Pair>
     {
         public const char SymbolSeparator = '/';
-        public string Symbol => $"{Coin.Symbol}{SymbolSeparator}{Base.Symbol}";
+        public string Symbol => $"{Coin.InternalSymbol}{SymbolSeparator}{Base.InternalSymbol}";
         public Blockchains Chain => Coin.Chain;
         public Coin Coin { get; }
         public Coin Base { get; }

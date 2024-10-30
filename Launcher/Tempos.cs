@@ -3,12 +3,10 @@ using System.Timers;
 
 namespace Launcher
 {
-    using Google.Protobuf.WellKnownTypes;
     using OneXMM;
     using OneXMM.Referential;
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
-    using Org.BouncyCastle.Bcpg.Sig;
 
     internal static class Tempos
     {
@@ -21,14 +19,14 @@ namespace Launcher
         #endregion
 
         public static DateTime Today;
-        public static List<Pair> PairsInScope = new List<Pair>(100);
-        
-        
+        public static List<Pair> PairsInScope = new List<Pair>(100);        
         
         public static void AddPairToTempos(Pair pair, FixingIntervals[] fixingIntervals)
         {
             if (AddPairToScope(pair))
             {
+                VolatilityServices.AddPair(pair);
+
                 foreach (var fixingInterval in fixingIntervals)
                 {
                     List<Pair>? listOfPairs = null;
@@ -54,23 +52,34 @@ namespace Launcher
         private static void NewTimer_Elapsed(object? sender, ElapsedEventArgs e)
         {
             if (Today != DateTime.Today) ExchangeServices.UpdateOptionAndFuturesReferential(PairsInScope);
+
             var fixingInterval = _timersToFixingInterval[(sender as System.Timers.Timer)!];
             var pairsToUpdate = _pairsByUpdateInterval[fixingInterval];
 
+            var pairsForCorrelatedVol = new List<Pair>();
+
             foreach (var pair in pairsToUpdate)
             {
-                var exchange = ExchangeServices.GetExchange(pair);
+                if (pair.CorrelatedVol)
+                {
+                    pairsForCorrelatedVol.Add(pair);
+                    continue;
+                }
 
-                if (ExchangeServices.GetRefInstrumentsForPair(pair, out var refInstr))
-                {
-                    var volSurfaceBuilder = Factory.CreateVolSurfaceBuilder(DateTime.Now.ToUniversalTime(), pair, exchange, refInstr.Item1, refInstr.Item2);
-                }
-                else
-                {
-                    // Sanity check
-                    if (!pair.CorrelatedVol) throw new Exception($"Tempos - The pair {pair.Symbol} is not marked as correlated vol but there are no ref instruments.");
-                    ddd
-                }
+                var exchange = ExchangeServices.GetExchange(pair);
+                if (exchange.IsCutoffTime()) ExchangeServices.UpdateOptionAndFuturesReferential(pair);
+
+                if (!ExchangeServices.GetRefInstrumentsForPair(pair, out var refInstr)) throw new Exception($"Tempos - The pair {pair.Symbol} is not marked as correlated vol but there are no ref instruments.");
+                
+                var volSurfaceBuilder = Factory.CreateVolSurfaceBuilder(DateTime.Now.ToUniversalTime(), pair, exchange, refInstr.Item1, refInstr.Item2);
+                var volSurface = volSurfaceBuilder.Calibrate(fixingInterval);
+                VolatilityServices.UpdateVolatilitySurface(volSurface);
+            }
+
+            foreach (var pair in pairsForCorrelatedVol)
+            {
+                Factory.ComputeCorrelatedVol(pair, fixingInterval);
+                throw new NotImplementedException();
             }
         }
 

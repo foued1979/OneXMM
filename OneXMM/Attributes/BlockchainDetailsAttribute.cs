@@ -3,7 +3,7 @@
 namespace OneXMM.Attributes
 {
     [AttributeUsage(AttributeTargets.Enum | AttributeTargets.Field)]
-    internal class BlockchainDetailsAttribute : Attribute
+    public class BlockchainDetailsAttribute : Attribute
     {
         public string TestUrl { get; set; }
         public string LiveUrl { get; set; }

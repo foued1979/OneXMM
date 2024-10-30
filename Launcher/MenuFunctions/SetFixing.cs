@@ -3,12 +3,12 @@ using System;
 
 namespace Launcher.MenuFunctions
 {
-    internal static class LaunchFixing
+    internal static class SetFixing
     {
         public static void LaunchFixingMenu()
         {
             Console.Clear();
-            Console.WriteLine("Launch Fixing");
+            Console.WriteLine("Set Fixing");
             Console.WriteLine("-------------");
             Console.WriteLine("Select the pairs (use ; as pair seperator):");
 

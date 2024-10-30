@@ -1,9 +1,10 @@
 ﻿using Launcher;
 using Launcher.MenuFunctions;
-using Nethereum.Model;
 using OneXMM;
 using OneXMM.Factories;
-using System.Text;
+using OneXMM.Referential;
+
+ExchangeServices.Init();
 
 while (true)
 {
@@ -25,12 +26,9 @@ while (true)
     if (!string.IsNullOrEmpty(cmd))
     {
         // Go to Pair selection process
-        if (cmd.Equals("1")) LaunchFixing.LaunchFixingMenu();
+        if (cmd.Equals("1")) SetFixing.LaunchFixingMenu();
     }
 }
-
-
-var contracts = ContractFactory.GetEthereumLikeContracts(OneXMM.Blockchains.HardHat, "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0", true);
 
 //var surface = Factory.GetVolatilitySurface(new DateTime(2024, 7, 19, 18, 0, 0, DateTimeKind.Local));
 

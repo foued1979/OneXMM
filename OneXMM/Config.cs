@@ -3,12 +3,10 @@ using System.Data;
 
 namespace OneXMM
 {
-    using OneXMM.Communication;
-    using OneXMM.Communication.MySQLRequests;
-    using OneXMM.Communication.MySQLResults;
     using OneXMM.Configuration;
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
+    using System.Runtime.CompilerServices;
 
     public static class Config
     {
@@ -18,6 +16,7 @@ namespace OneXMM
         private static ExchangeSettings _settings;
 
         // The internal fields
+        internal readonly static Configuration.ContractsReferential _contractsReferential;
         internal readonly static Configuration.Referential _referential;
         internal readonly static SymbolMapping _symbolMapping;
         internal readonly static SortedDictionary<Pair, Dictionary<FixingIntervals, string[]>> _poolUpdateCfg = new SortedDictionary<Pair, Dictionary<FixingIntervals, string[]>>();
@@ -26,6 +25,7 @@ namespace OneXMM
         {
             _settings = SetSettings();
             _symbolMapping = SetSymbolMapping();
+            _contractsReferential = SetContractsRef();
             _referential = SetRefData();
             
             foreach (var pairDef in _referential.PairDefs)
@@ -66,6 +66,13 @@ namespace OneXMM
             return pairDef.RefExchange;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string GetTokenContractAddress(Blockchains blockchain, bool isTestMode)
+        {
+            if (isTestMode) return _contractsReferential.Test.OneXMM[blockchain];
+            else return _contractsReferential.Live.OneXMM[blockchain];
+        }
+
         /// <summary>
         /// Returns the fixing intervals which are used for a pair.
         /// </summary>
@@ -99,7 +106,7 @@ namespace OneXMM
             {
                 var coin = _referential.Coins.First(c => c.Id == pd.CoinId);
                 var counter = _referential.Coins.First(c => c.Id == pd.BaseId);
-                if (!_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}/{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.Symbol}/{counter.Symbol}.");
+                if (!_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}/{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.InternalSymbol}/{counter.InternalSymbol}.");
 
                 return new Pair(coin, counter, pd.CorrelatedVol, exchangeSymbols);
             }).ToArray();
@@ -112,7 +119,7 @@ namespace OneXMM
                 {
                 var coin = _referential.Coins.First(c => c.Id == pd.CoinId);
                 var counter = _referential.Coins.First(c => c.Id == pd.BaseId);
-                if (!_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}{Pair.SymbolSeparator}{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.Symbol}/{counter.Symbol}.");
+                if (!_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.InternalSymbol}/{counter.InternalSymbol}.");
 
                 return new Pair(coin, counter, pd.CorrelatedVol, exchangeSymbols);
                 })
@@ -125,19 +132,19 @@ namespace OneXMM
             var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coinId && pd.BaseId == baseId);
             var coin = _referential.Coins.First(c => c.Id == coinId);
             var counter = _referential.Coins.First(c => c.Id == baseId);
-            if (!_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}{Pair.SymbolSeparator}{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.Symbol}/{counter.Symbol}.");
+            if (!_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.InternalSymbol}/{counter.InternalSymbol}.");
 
             return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
         }
 
         public static Pair GetPair(string coinSymbol, string counterSymbol, Blockchains chain)
         {
-            var coin = _referential.Coins.FirstOrDefault(c => c.Symbol.Equals(coinSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
-            var counter = _referential.Coins.FirstOrDefault(c => c.Symbol.Equals(counterSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
+            var coin = _referential.Coins.FirstOrDefault(c => c.InternalSymbol.Equals(coinSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
+            var counter = _referential.Coins.FirstOrDefault(c => c.InternalSymbol.Equals(counterSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
 
             var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coin.Id && pd.BaseId == counter.Id);
 
-            if (coin is null || counter is null || !_symbolMapping.Mapping.TryGetValue($"{coin.Symbol}{Pair.SymbolSeparator}{counter.Symbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coinSymbol}/{counterSymbol}.");
+            if (coin is null || counter is null || !_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coinSymbol}/{counterSymbol}.");
             return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
         }
 
@@ -150,14 +157,22 @@ namespace OneXMM
         private static ExchangeSettings SetSettings()
         {
             var appPath = Environment.CurrentDirectory;
-            return Utils.Utils.ConvertFileToObject<ExchangeSettings>(Path.Combine(appPath, "Configuration\\ExchangeSettings.json")) ?? throw new Exception("ReferentialData - Issue reading ExchangeSettings.");
+            return Utils.Utils.ConvertFileToObject<ExchangeSettings>(Path.Combine(appPath, "Configuration\\ExchangeSettings.json")) ?? throw new Exception("Config - Issue reading ExchangeSettings.");
         }
 
         private static Configuration.Referential SetRefData()
         {
             using (var r = typeof(Config).Assembly.GetManifestResourceStream("OneXMM.Configuration.Referential.json"))
             {
-                return Utils.Utils.ConvertJsonToObject<Configuration.Referential>(r) ?? throw new Exception("ReferentialData - Issue reading Referential.");
+                return Utils.Utils.ConvertJsonToObject<Configuration.Referential>(r) ?? throw new Exception("Config - Issue reading Referential.");
+            }
+        }
+
+        private static Configuration.ContractsReferential SetContractsRef()
+        {
+            using (var r = typeof(Config).Assembly.GetManifestResourceStream("OneXMM.Configuration.ContractsReferential.json"))
+            {
+                return Utils.Utils.ConvertJsonToObject<Configuration.ContractsReferential>(r) ?? throw new Exception("Config - Issue reading ContractsReferential.");
             }
         }
 

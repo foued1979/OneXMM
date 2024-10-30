@@ -6,7 +6,7 @@ namespace OneXMM.Pricing
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
 
-    public class VolatilitySurface
+    public class VolatilitySurface : YieldPoints, IVolatilitySurface
     {
         public DateTime SurfaceDate { get; set; }
 
@@ -16,61 +16,29 @@ namespace OneXMM.Pricing
 
         public SortedDictionary<DateTime, SABR> Smiles { get; set; } = new SortedDictionary<DateTime, SABR>();
 
-        public SortedDictionary<DateTime, double> Yields { get; set; } = new SortedDictionary<DateTime, double>();
-
         public VolatilitySurface() { }
 
         public VolatilitySurface(DateTime surfaceDate, Pair pair, IExchange exchange)
         {
             Pair = pair;
             Exchange = exchange;
-            SurfaceDate = exchange.UseUniversalTime ? surfaceDate.ToUniversalTime() : surfaceDate; 
+            SurfaceDate = exchange.ExchangeUsesUniversalTime ? surfaceDate.ToUniversalTime() : surfaceDate; 
         }
 
-        public double GetForward(double spot, DateTime asof, DateTime expiry)
+        public override double GetForward(double spot, DateTime asof, DateTime expiry)
         {
-            if (Exchange.UseUniversalTime)
+            if (Exchange.ExchangeUsesUniversalTime)
             {
                 asof = asof.ToUniversalTime();
                 expiry = expiry.ToUniversalTime();
             }
 
-            var yf = 0.0;
-
-            if (Yields.First().Key.CompareTo(expiry) > 0)
-            {
-                yf = (Yields.First().Key - asof).TotalDays / 365.0;
-                return spot * (1 + Yields.First().Value * yf);
-            }
-
-            var expiries = Yields.Keys;
-            yf = (expiry - asof).TotalDays / 365.0;
-
-            for (int i = 0; i < Yields.Count; i++)
-            {
-                if (expiry.IsAround(expiries.ElementAt(i)))
-                {
-                    return spot * (1 + Yields.ElementAt(i).Value * yf);
-                }
-                else if (expiry.CompareTo(expiries.ElementAt(i)) < 0)
-                {
-                    var tenorDown = (Yields.ElementAt(i - 1).Key - asof).TotalDays / 365.0;
-                    var yieldDown = Yields.ElementAt(i - 1).Value;
-
-                    var tenorUp = (Yields.ElementAt(i).Key - asof).TotalDays / 365.0;
-                    var yieldUp = Yields.ElementAt(i).Value;
-
-                    var yield = yieldDown + (yf - tenorDown) / (tenorUp - tenorDown) * (yieldUp - yieldDown);
-                    return spot * (1 + yield * yf);
-                }
-            }
-
-            return spot * (1 + Yields.Last().Value * yf);
+            return base.GetForward(spot, asof, expiry);
         }
 
         public double GetVol(double forward, double strike, DateTime expiry)
         {
-            if (Exchange.UseUniversalTime) expiry = expiry.ToUniversalTime();
+            if (Exchange.ExchangeUsesUniversalTime) expiry = expiry.ToUniversalTime();
 
             if (Smiles.Keys.First().CompareTo(expiry) > 0)
             {
@@ -110,8 +78,7 @@ namespace OneXMM.Pricing
         public void Serialize()
         {
             var now = DateTime.Now.ToUniversalTime();
-            var surfaceDate = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc);
-            var path = Path.Combine(Environment.CurrentDirectory, $"Configuration\\VolSurface_{surfaceDate.ToString("dd-MM-yyyyTHH_mm_ss")}.json");
+            var path = Path.Combine(Environment.CurrentDirectory, $"Configuration\\VolSurface_{SurfaceDate.ToUniversalTime().ToString("dd-MM-yyyyTHH_mm_ss")}.json");
 
             Utils.Serialize(this, path, "dd-MM-yyyyTHH:mm:ss");
         }

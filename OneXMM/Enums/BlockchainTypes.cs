@@ -2,7 +2,7 @@
 
 namespace OneXMM
 {
-    internal enum BlockchainTypes
+    public enum BlockchainTypes
     {
         EthereumLike = 0
     }

@@ -6,7 +6,8 @@
       "ProdRPCUri": "https://www.deribit.com",
       "TestWsUri": "wss://test.deribit.com/ws/api/v2",
       "ProdWsUri": "wss://www.deribit.com/ws/api/v2",
-      "Cutoff": "08H00",
+      // Cutoff is UTC time
+      "Cutoff": "00H00",
       "UseUniversalTime": true,
       "ExpiryFormat": "ddMMMyy"
     }

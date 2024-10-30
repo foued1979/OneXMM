@@ -2,31 +2,36 @@
   "Coins": [
     {
       "Id": 0,
-      "Symbol": "BTC",
+      "ContractSymbol": "WBTC",
+      "InternalSymbol": "BTC",
       "Address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
       "Chain": "Ethereum"
     },
     {
       "Id": 1,
-      "Symbol": "ETH",
+      "ContractSymbol": "ETH",
+      "InternalSymbol": "ETH",
       "Address": "0x",
       "Chain": "Ethereum"
     },
     {
       "Id": 2,
-      "Symbol": "ETH",
+      "ContractSymbol": "WETH",
+      "InternalSymbol": "ETH",
       "Address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
       "Chain": "Ethereum"
     },
     {
       "Id": 3,
-      "Symbol": "USDT",
+      "ContractSymbol": "USDT",
+      "InternalSymbol": "USDT",
       "Address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
       "Chain": "Ethereum"
     },
     {
       "Id": 4,
-      "Symbol": "USD",
+      "ContractSymbol": "USD",
+      "InternalSymbol": "USD",
       "Address": ""
     }
   ],

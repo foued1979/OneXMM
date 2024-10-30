@@ -7,14 +7,16 @@ namespace OneXMM.Referential.Assets
         public int Id { get; }
         public bool IsFiat => string.IsNullOrEmpty(Address);
         public bool IsNative => Address.Equals("0x");
-        public string Symbol { get; } = "";
+        public string ContractSymbol { get; } = "";
+        public string InternalSymbol { get; } = "";
         public string Address { get; } = "";
         public Blockchains Chain { get; } = Blockchains.Error;
 
-        public Coin(int id, string symbol, string address, Blockchains chain) 
+        public Coin(int id, string contractSymbol, string internalSymbol, string address, Blockchains chain) 
         { 
             Id = id;
-            Symbol = symbol;
+            ContractSymbol = contractSymbol;
+            InternalSymbol = internalSymbol;
             Address = address;
             Chain = chain;
         }
@@ -31,7 +33,7 @@ namespace OneXMM.Referential.Assets
 
         public override int GetHashCode()
         {
-            return Symbol.GetHashCode();
+            return InternalSymbol.GetHashCode();
         }
 
         public int CompareTo(Coin? other)
@@ -40,7 +42,7 @@ namespace OneXMM.Referential.Assets
             if (other.Equals(this)) return 0;
 
             if (other.Chain != Chain) return Chain.CompareTo(other.Chain);
-            if (other.Address.Equals(Address)) return Symbol.CompareTo(other.Symbol);
+            if (other.Address.Equals(Address)) return InternalSymbol.CompareTo(other.InternalSymbol);
 
             return Address.CompareTo(other.Address);
         }

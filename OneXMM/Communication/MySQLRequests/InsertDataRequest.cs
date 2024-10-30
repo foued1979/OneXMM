@@ -7,11 +7,13 @@ namespace OneXMM.Communication.MySQLRequests
     {
         public string TableName { get; }
         public string[][] DataToInsert { get; }
+        public MySQLInsertTypes InsertType { get; }
 
-        public InsertDataRequest(string tableName, string[][] dataToInsert)
+        public InsertDataRequest(string tableName, string[][] dataToInsert, MySQLInsertTypes insertType)
         {
             TableName = tableName;
             DataToInsert = dataToInsert;
+            InsertType = insertType;
         }
 
         public string[] ToCmd()
@@ -21,12 +23,23 @@ namespace OneXMM.Communication.MySQLRequests
             for (int i = 0; i < DataToInsert.GetLength(0); i++)
             {
                 var sb = new StringBuilder();
-                sb.Append($"INSERT INTO {TableName} VALUES(");
+
+                switch (InsertType)
+                {
+                    case MySQLInsertTypes.None:
+                    case MySQLInsertTypes.IdInDataToInsert:
+                        sb.Append($"INSERT INTO {TableName} VALUES(");
+                        break;
+                    case MySQLInsertTypes.IdNotInDataToInsert:
+                        sb.Append($"INSERT INTO {TableName} ({TableDef.GetFieldNamesWithoutId(TableName)}) VALUES(");
+                        break;
+                }
 
                 for (int j = 0; j < DataToInsert[i].Length - 1; j++) sb.Append($"'{DataToInsert[i][j]}', ");
                 sb.Append($"'{DataToInsert[i].Last()}');");
 
                 cmds[i] = sb.ToString();
+
             }
 
             return cmds;

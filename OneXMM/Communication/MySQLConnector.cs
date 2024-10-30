@@ -1,19 +1,22 @@
-﻿using OneXMM.Communication.MySQLRequests;
+﻿using MySql.Data.MySqlClient;
 using System;
+using System.Text;
 
 namespace OneXMM.Communication
 {
+    using OneXMM.Communication.MySQLRequests;
+
     internal sealed class MySQLConnector
     {
         public const string DateFormat = "yyyy-MM-dd";
         public const string DatetimeFormat = "yyyy-MM-dd HH:mm:ss";
 
-        private MySql.Data.MySqlClient.MySqlConnection _connection;
+        private MySqlConnection _connection;
 
         public MySQLConnector(string user, string pwd, string marketdataDB, int port)
         {
             var connectionString = $"server=127.0.0.1;port={port};uid={user};pwd={pwd};database={marketdataDB}";
-            _connection = new MySql.Data.MySqlClient.MySqlConnection(connectionString);
+            _connection = new MySqlConnection(connectionString);
             _connection.Open();
 
             var tableRequest = new GetTablesRequest();
@@ -54,7 +57,16 @@ namespace OneXMM.Communication
                 using (var cmd = _connection.CreateCommand())
                 {
                     cmd.CommandText = cmds[i];
-                    cmd.ExecuteNonQuery();
+
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch (MySqlException ex)
+                    {
+                        if (ex.Code == 1602) continue;
+                        else throw new Exception("MySQL insert error", ex);
+                    }
                 }
             }
         }
@@ -63,13 +75,41 @@ namespace OneXMM.Communication
         {
             using (var cmd = connection.CreateCommand())
             {
+                var sb = new StringBuilder();
+                var isFirstField = true;
+
                 switch (table)
                 {
                     case MySQLTables.historical_prices:
-                        cmd.CommandText = $"CREATE TABLE {MySQLTables.historical_prices.ToString()}(symbol varchar(30) not null, date datetime not null, price double not null, CONSTRAINT unique_quote UNIQUE (symbol,date));";
+                        sb.Append($"CREATE TABLE {MySQLTables.historical_prices.ToString()} (");
+                        foreach (var field in TableDef.HistoricalPrices)
+                        {
+                            if (isFirstField) { sb.Append($"{field.ColumnName} {field.Definition}"); isFirstField = false; }
+                            else sb.Append($",{field.ColumnName} {field.Definition}");
+                        }
+                            
+                        sb.Append(",CONSTRAINT unique_quote UNIQUE(symbol, date));");
+                        cmd.CommandText = sb.ToString();
                         break;
                     case MySQLTables.futures_ref:
-                        cmd.CommandText = $"CREATE TABLE {MySQLTables.futures_ref.ToString()}(id int not null auto_increment, symbol varchar(40) not null, undl varchar(20) not null, expiry string not null, exchange varchar(20) not null, inputdate datetime not null, CONSTRAINT unique_futures UNIQUE (symbol,exchange));";
+                        sb.Append($"CREATE TABLE {MySQLTables.futures_ref.ToString()} (");
+                        foreach (var field in TableDef.FuturesRef)
+                        {
+                            if (isFirstField) { sb.Append($"{field.ColumnName} {field.Definition}"); isFirstField = false; }
+                            else sb.Append($",{field.ColumnName} {field.Definition}");
+                        }
+                        sb.Append(",PRIMARY KEY (id),CONSTRAINT unique_futures UNIQUE (symbol,exchange));");
+                        cmd.CommandText = sb.ToString();
+                        break;
+                    case MySQLTables.options_ref:
+                        sb.Append($"CREATE TABLE {MySQLTables.options_ref.ToString()} (");
+                        foreach (var field in TableDef.OptionsRef)
+                        {
+                            if (isFirstField) { sb.Append($"{field.ColumnName} {field.Definition}"); isFirstField = false; }
+                            else sb.Append($",{field.ColumnName} {field.Definition}");
+                        }
+                        sb.Append(",PRIMARY KEY (id),CONSTRAINT unique_option UNIQUE (symbol,exchange));");
+                        cmd.CommandText = sb.ToString();
                         break;
                 }
                 

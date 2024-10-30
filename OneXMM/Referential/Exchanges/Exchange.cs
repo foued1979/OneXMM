@@ -26,7 +26,7 @@ namespace OneXMM.Referential.Exchanges
         public TimeSpan Cutoff { get; }
         public abstract bool QuoteInBase { get; }
         public abstract bool IsDiscounted { get; }
-        public bool UseUniversalTime { get; private set; }
+        public bool ExchangeUsesUniversalTime { get; private set; }
 
         public Exchange(OneXMM.Exchanges exchange, bool isTestMode) 
         {
@@ -34,8 +34,9 @@ namespace OneXMM.Referential.Exchanges
             IsTestMode = isTestMode;
 
             _config = OneXMM.Config.GetExchangeConfig(exchange);
-            UseUniversalTime = _config.UseUniversalTime ?? throw new Exception($"Exchange - UseUniversalTime has not been set for {exchange}.");
+            ExchangeUsesUniversalTime = _config.UseUniversalTime ?? throw new Exception($"Exchange - UseUniversalTime has not been set for {exchange}.");
             Cutoff = _config.Cutoff.ToTimeSpan();
+            Cutoff = Cutoff.Add(TimeZoneInfo.Local.GetUtcOffset(DateTime.Now));
             
 
             var rpcUri = (isTestMode ? _config.TestRPCUri : _config.ProdRPCUri).TrimEnd('/');
@@ -48,6 +49,12 @@ namespace OneXMM.Referential.Exchanges
             _wsClient.ConnectAsync(new Uri(wsUri), default).ConfigureAwait(false).GetAwaiter().GetResult();
 
             Task.Factory.StartNew(() => Listen());
+        }
+
+        public bool IsCutoffTime()
+        {
+            var now = DateTime.Now;
+            return now.Hour == Cutoff.Hours && now.Minute == Cutoff.Minutes && now.Second == Cutoff.Seconds;
         }
 
         public abstract Option[] LoadOptions(Pair pair);
@@ -127,9 +134,9 @@ namespace OneXMM.Referential.Exchanges
         {
             var date = DateTime.ParseExact(expiryStr, _config.ExpiryFormat, null).Add(Cutoff);
 
-            if (UseUniversalTime)
+            if (ExchangeUsesUniversalTime)
             {
-                var offset = TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now);
+                var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
                 date = date.Add(offset).ToUniversalTime();
             }
 

@@ -11,9 +11,13 @@ namespace OneXMM.Referential
 
     public static class ExchangeServices
     {
+        public static bool IsInitiated { get; private set; } = false;
+
         private readonly static MySQLConnector _sqlConnector = Factory.CreateMySQLConnector();
         internal readonly static SortedDictionary<OneXMM.Exchanges, Exchange> _exchanges;
         internal readonly static SortedDictionary<Pair, (Futures[], Option[])> _instrumentsByPair;
+
+        public static void Init() { IsInitiated = true; }
 
         static ExchangeServices()
         {
@@ -21,11 +25,13 @@ namespace OneXMM.Referential
 
             foreach (OneXMM.Exchanges exchange in Enum.GetValues(typeof(OneXMM.Exchanges)))
             {
+                if (exchange == OneXMM.Exchanges.None) continue;
                 AddExchange(exchange);
             }
 
             _instrumentsByPair = new SortedDictionary<Pair, (Futures[], Option[])>();
             var today = DateTime.Today;
+            var todayStr = today.ToString(MySQLConnector.DateFormat);
 
             foreach (var pair in Config.GetPairs())
             {
@@ -46,19 +52,41 @@ namespace OneXMM.Referential
                     for (int i = 0; i < futures.Length; ++i)
                     {
                         dataToInsert[i] = futures[i].ToFields();
+                        dataToInsert[i] = dataToInsert[i].Append(todayStr).ToArray();
                     }
 
-                    var insertReq = new InsertDataRequest(MySQLTables.futures_ref.ToString(), dataToInsert);
+                    var insertReq = new InsertDataRequest(MySQLTables.futures_ref.ToString(), dataToInsert, MySQLInsertTypes.IdNotInDataToInsert);
                     _sqlConnector.InsertData(insertReq);
                 }
                 else
                 {
                     futures = futuresResult.Select(r => r.ToFutures(pair)).ToArray();
                 }
-                
-                
 
-                var options = exchange.LoadOptions(pair);
+                var getOptionRequest = new GetOptionsRequest(today, pair);
+                var optionsResult = _sqlConnector.Get(getOptionRequest);
+                Option[]? options = null;
+
+                if (optionsResult.Count() == 0)
+                {
+                    options = exchange.LoadOptions(pair);
+                    string[][] dataToInsert = new string[options.Length][];
+
+                    for (int i = 0; i < options.Length; ++i)
+                    {
+                        dataToInsert[i] = options[i].ToFields();
+                        dataToInsert[i] = dataToInsert[i].Append(todayStr).ToArray();
+                    }
+
+                    var insertReq = new InsertDataRequest(MySQLTables.options_ref.ToString(), dataToInsert, MySQLInsertTypes.IdNotInDataToInsert);
+                    _sqlConnector.InsertData(insertReq);
+                }
+                else
+                {
+                    options = optionsResult.Select(r => r.ToOption(pair)).ToArray();
+                }
+
+                _instrumentsByPair.Add(pair, (futures, options));
             }
         }
 
@@ -78,12 +106,56 @@ namespace OneXMM.Referential
 
         public static void UpdateOptionAndFuturesReferential(IEnumerable<Pair> pairs)
         {
-            ggg
+            foreach (var pair in pairs)
+                UpdateOptionAndFuturesReferential(pair);
         }
 
         public static void UpdateOptionAndFuturesReferential(Pair pair)
         {
-            ggg
+            // For correlated vol, there is no instrument to load for the pair
+            if (pair.CorrelatedVol) return;
+
+            var today = DateTime.Today;
+            var todayStr = today.ToString(MySQLConnector.DateFormat);
+
+            var exchange = _exchanges[Config.GetReferenceExchangeForPair(pair)];
+
+            // We load the new futures
+            var futures = exchange.LoadFutures(pair);
+            string[][] dataToInsert = new string[futures.Length][];
+
+            for (int i = 0; i < futures.Length; ++i)
+            {
+                dataToInsert[i] = futures[i].ToFields();
+                dataToInsert[i] = dataToInsert[i].Append(todayStr).ToArray();
+            }
+
+            var insertReq = new InsertDataRequest(MySQLTables.futures_ref.ToString(), dataToInsert, MySQLInsertTypes.IdNotInDataToInsert);
+            _sqlConnector.InsertData(insertReq);
+            // --------
+
+            // We load the new options
+            var options = exchange.LoadOptions(pair);
+            dataToInsert = new string[options.Length][];
+
+            for (int i = 0; i < options.Length; ++i)
+            {
+                dataToInsert[i] = options[i].ToFields();
+                dataToInsert[i] = dataToInsert[i].Append(todayStr).ToArray();
+            }
+
+            insertReq = new InsertDataRequest(MySQLTables.options_ref.ToString(), dataToInsert, MySQLInsertTypes.IdNotInDataToInsert);
+            _sqlConnector.InsertData(insertReq);
+
+            lock (_instrumentsByPair)
+                if (_instrumentsByPair.TryGetValue(pair, out var instrs))
+                {
+                    _instrumentsByPair[pair] = (futures, options);
+                }
+                else
+                {
+                    _instrumentsByPair.Add(pair, (futures, options));
+                }
         }
 
         public static Exchange GetExchange(OneXMM.Exchanges exchange) => _exchanges[exchange];

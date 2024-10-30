@@ -13,7 +13,7 @@ namespace OneXMM.Pricing
     {
         public record FixingDetails(double Spot, double Strike, double Premium);
 
-        public static FixingDetails? FindFixing(DateTime asof, IExchange exchange, VolatilitySurface surface, PoolMaturities poolMaturity)
+        public static FixingDetails? FindFixing(DateTime asof, IExchange exchange, IVolatilitySurface surface, PoolMaturities poolMaturity)
         {
             var attr = poolMaturity.GetAttributeForEnum<PoolMaturities, PoolMaturityAttribute>();
 
@@ -34,7 +34,7 @@ namespace OneXMM.Pricing
             return null;
         }
 
-        private static Func<double, double> GetFunction(DateTime asof, double spot, IExchange exchange, Pair pair, DateTime expiry, VolatilitySurface volatilitySurface)
+        private static Func<double, double> GetFunction(DateTime asof, double spot, IExchange exchange, Pair pair, DateTime expiry, IVolatilitySurface volatilitySurface)
         {
             return new Func<double, double>((k) =>
             {

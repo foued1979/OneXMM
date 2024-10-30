@@ -2,18 +2,14 @@
 
 namespace OneXMM.Referential
 {
+    using OneXMM.Communication;
     using OneXMM.Interfaces;
     using OneXMM.Pricing;
-    using OneXMM.Referential.Assets;
-    using OneXMM.Referential.Exchanges;
 
-    public sealed class Option : IComparable<Option>
+    public sealed class Option : IComparable<Option>, IMySQLData
     {
-        public static Option CreateOption(Exchange exchange, string symbol, Pair pair, OptionTypes optionType, double strike, DateTime expiry)
-            => new Option(exchange, symbol, pair, optionType, strike, expiry);
-
         public int Id { get; set; }
-        public Exchange Exchange { get; set; }
+        public IExchange Exchange { get; set; }
         public string Symbol { get; set; }
         public Assets.Pair Pair { get; set; }
         public OptionTypes OptionType { get; set; }
@@ -21,19 +17,19 @@ namespace OneXMM.Referential
         public DateTime Expiry { get; }
 
         public Option(IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
-            : this(exchange, pair, optionType, strike, expiry) { Symbol = symbol; }
+            : this(exchange, pair, optionType, strike, expiry) { Symbol = symbol; Id = Symbol.GetHashCode(); }
 
         public Option(IExchange exchange, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry) 
         {
-            Id = $"{exchange.Name}_{pair.Symbol}_{optionType}_{strike}_{expiry.ToString("ddMMMyy")}".GetHashCode();
-            Symbol = "Custom";
-            Exchange = exchange as Exchange;
+            Symbol = $"{pair.Symbol}_{optionType}_{expiry.ToString("ddMMMyy")}_{strike}_{exchange.Name}";
+            Id = Symbol.GetHashCode();
+            Exchange = exchange;
             Pair = pair;
             OptionType = optionType;
             Strike = strike;
 
             // We adjust the expiry depending on whether Exchange is using UTC time
-            Expiry = exchange.UseUniversalTime
+            Expiry = exchange.ExchangeUsesUniversalTime
                 ? expiry.Kind == DateTimeKind.Utc
                     ? expiry
                     : expiry.ToUniversalTime()
@@ -42,7 +38,7 @@ namespace OneXMM.Referential
                     : expiry;
         }
 
-        public Option(int id, Exchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, string expiry)
+        public Option(int id, IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, string expiry)
         {
             Id = id;
             Exchange = exchange;
@@ -55,9 +51,9 @@ namespace OneXMM.Referential
             Expiry = exchange.ToExpiry(expiry);
         }
 
-        public double Price(DateTime asof, double spot, VolatilitySurface volSurface)
+        public double Price(DateTime asof, double spot, IVolatilitySurface volSurface)
         {
-            if (Exchange.UseUniversalTime) asof = asof.ToUniversalTime();
+            if (Exchange.ExchangeUsesUniversalTime) asof = asof.ToUniversalTime();
 
             var expiry = (Expiry - volSurface.SurfaceDate).TotalDays * Constants.OneOver365;
             var forward = volSurface.GetForward(spot, asof, Expiry);
@@ -78,7 +74,7 @@ namespace OneXMM.Referential
 
         public double Price(DateTime asof, double spot, double forward, SABR smile)
         {
-            if (Exchange.UseUniversalTime) asof = asof.ToUniversalTime();
+            if (Exchange.ExchangeUsesUniversalTime) asof = asof.ToUniversalTime();
 
             var expiry = (Expiry - smile.SmileDate).TotalDays * Constants.OneOver365;
             var vol = smile.GetVol(forward, Strike);
@@ -122,6 +118,11 @@ namespace OneXMM.Referential
             if (other.OptionType != OptionType) return OptionType == OptionTypes.Call ? -1 : 1;
             var expiryCompare = Expiry.CompareTo(other.Expiry);
             return expiryCompare == 0 ? Strike.CompareTo(other.Strike) : expiryCompare;
+        }
+
+        public string[] ToFields()
+        {
+            return [Symbol, OptionType.ToString(), Strike.ToString(), Pair.Symbol, Expiry.ToString(MySQLConnector.DateFormat), Exchange.Name];
         }
     }
 }

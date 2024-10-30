@@ -10,7 +10,7 @@ namespace OneXMM
 
     public static class Factory
     {
-        public static VolatilitySurface? GetVolatilitySurface(DateTime asof)
+        public static IVolatilitySurface? GetVolatilitySurface(DateTime asof)
         {
             var surfaceDate = new DateTime(asof.Year, asof.Month, asof.Day, asof.ToUniversalTime().Hour, 0, 0, DateTimeKind.Utc);
             var path = Path.Combine(Environment.CurrentDirectory, $"Configuration\\VolSurface_{surfaceDate.ToString("dd-MM-yyyyTHH_mm_ss")}.json");
@@ -34,6 +34,11 @@ namespace OneXMM
 
             Task.WaitAll(fillTasks);
             return newSurfaceBuilder;
+        }
+
+        public static double ComputeCorrelatedVol(Pair pair, FixingIntervals updateTempo)
+        {
+            throw new NotImplementedException();
         }
 
         internal static MySQLConnector CreateMySQLConnector()

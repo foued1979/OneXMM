@@ -13,48 +13,76 @@ namespace OneXMM.Factories
 
     public static class ContractFactory
     {
-        public static Contract[] GetEthereumLikeContracts(Blockchains blockchain, string contractAddress, bool isTestMode)
+        private static Dictionary<Blockchains, Contract> _tokenContracts = new Dictionary<Blockchains, Contract>();
+
+        public static void SetContractFactory(bool isTestMode)
+        {
+            if (isTestMode) SetEthereumLikeContracts(Blockchains.HardHat, isTestMode);
+#if !DEBUG
+            _contracts.Add(Blockchains.Ethereum, GetEthereumLikeContracts(Blockchains.Ethereum, isTestMode));
+#endif
+        }
+
+        public static IRequestManager<FType> CreateRequestManager<FType>(Blockchains blockchain)
+            where FType : Enum
+        {
+            var attr = blockchain.GetAttributeForEnum<Blockchains, BlockchainDetailsAttribute>()!;
+
+            if (attr.BlockchainType == BlockchainTypes.EthereumLike)
+            {
+                return new EthereumLikeRequestManager<FType>(new EthereumAccount((int)blockchain), GetContract<FType>(blockchain));
+            }
+
+            throw new NotImplementedException();
+        }
+
+        private static void SetEthereumLikeContracts(Blockchains blockchain, bool isTestMode)
         {
             var assembly = Assembly.GetExecutingAssembly();
             var embeddedResources = assembly.GetManifestResourceNames();
-
-            var contracts = new List<Contract>(10);
 
             foreach (var embeddedResource in embeddedResources)
             {
                 if (embeddedResource.Contains("OneXMM.Resources") && embeddedResource.EndsWith(".json"))
                 {
-                    using (var stream = assembly.GetManifestResourceStream(embeddedResource))
-                    using (var streamReader = new StreamReader(stream))
+                    if (embeddedResource.Contains("Token"))
                     {
-                        var abi = streamReader.ReadToEnd();
-                        var hardhatArtifact = Utils.ConvertJsonToObject<HardhatArtifact>(abi);
-                        if (hardhatArtifact is null) continue;
+                        var contractAddress = Config.GetTokenContractAddress(blockchain, isTestMode);
 
-                        switch (blockchain)
+                        using (var stream = assembly.GetManifestResourceStream(embeddedResource))
+                        using (var streamReader = new StreamReader(stream))
                         {
-                            case Blockchains.Ethereum:
-                            case Blockchains.HardHat:
-                                var contract = GetEthereumContract(hardhatArtifact.ToString(), contractAddress, isTestMode);
-                                if (contract is not null) contracts.Add(contract);
-                                break;
-                            default:
-                                throw new NotImplementedException($"GetSmartContracts - Unknown blockchain {blockchain}.");
+                            var abi = streamReader.ReadToEnd();
+                            var hardhatArtifact = Utils.ConvertJsonToObject<HardhatArtifact>(abi);
+                            if (hardhatArtifact is null) continue;
+
+                            switch (blockchain)
+                            {
+                                case Blockchains.Ethereum:
+                                case Blockchains.HardHat:
+                                    var contract = GetEthereumContract(hardhatArtifact.ToString(), contractAddress, isTestMode);
+                                    if (contract is null) throw new Exception($"ContractFactory - Contrac is null for blockchain {blockchain.ToString()} and address {contractAddress}.");
+                                    _tokenContracts.Add(blockchain, contract);
+                                    break;
+                                default:
+                                    throw new NotImplementedException($"GetSmartContracts - Unknown blockchain {blockchain}.");
+                            }
+
                         }
-                        
+                    }
+                    else if (embeddedResource.Contains("Pool"))
+                    {
+                        throw new NotImplementedException();
                     }
                 }
             }
-
-            return contracts.ToArray();
         }
 
-        public static IRequestManager<FType> CreateRequestManager<FType>(object contract, bool isTestMode)
-            where FType : Enum
+        private static Contract GetContract<FType>(Blockchains blockchain) where FType : Enum
         {
-            if (contract is Contract ethContract)
+            if (typeof(FType).Equals(typeof(TokenFunctions)))
             {
-                return new EthereumLikeRequestManager<FType>(new EthereumAccount(isTestMode ? (int)Blockchains.HardHat : (int)Blockchains.Ethereum), ethContract);
+                return _tokenContracts[blockchain];
             }
 
             throw new NotImplementedException();

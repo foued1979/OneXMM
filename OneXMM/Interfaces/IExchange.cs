@@ -13,7 +13,11 @@ namespace OneXMM.Interfaces
 
         bool IsDiscounted { get; }
 
-        bool UseUniversalTime { get; }
+        bool ExchangeUsesUniversalTime { get; }
+
+        bool IsCutoffTime();
+
+        DateTime ToExpiry(string expiry);
 
         Option[] LoadOptions(Pair pair);
 

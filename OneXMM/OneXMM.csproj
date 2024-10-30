@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Configuration\ContractsReferential.json" />
     <None Remove="Configuration\ExchangeSettings.json" />
     <None Remove="Configuration\MySQLSettings.txt" />
     <None Remove="Configuration\Referential.json" />
@@ -27,6 +28,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Configuration\ContractsReferential.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
     <EmbeddedResource Include="Configuration\Referential.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>

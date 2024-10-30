@@ -13,7 +13,8 @@ namespace OneXMM.Communication.Services
         public static void InsertQuote(HistoricalResult quote)
         {
             _sqlConnector.InsertData(new InsertDataRequest(MySQLTables.historical_prices.ToString(),
-                [[quote.Symbol, quote.Timestamp.ToString(MySQLConnector.DatetimeFormat), quote.Value.ToString()]]));
+                [[quote.Symbol, quote.Timestamp.ToString(MySQLConnector.DatetimeFormat), quote.Value.ToString()]],
+                MySQLInsertTypes.None));
         }
 
         public static IEnumerable<HistoricalResult> GetHistoricalQuote(Pair pair, DateTime? date = null)
