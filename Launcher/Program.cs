@@ -27,6 +27,8 @@ while (true)
     {
         // Go to Pair selection process
         if (cmd.Equals("1")) SetFixing.LaunchFixingMenu();
+        else if (cmd.Equals("2")) Menu.ShowPairsInScope();
+        else if (cmd.Equals("3")) Tempos.LaunchTempos();
     }
 }
 

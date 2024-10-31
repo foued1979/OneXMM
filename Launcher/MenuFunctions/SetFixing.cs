@@ -8,8 +8,8 @@ namespace Launcher.MenuFunctions
         public static void LaunchFixingMenu()
         {
             Console.Clear();
-            Console.WriteLine("Set Fixing");
-            Console.WriteLine("-------------");
+            Console.WriteLine("Set pairs for fixing process");
+            Console.WriteLine("----------------------------");
             Console.WriteLine("Select the pairs (use ; as pair seperator):");
 
             var count = 1;

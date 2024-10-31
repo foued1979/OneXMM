@@ -41,7 +41,7 @@ namespace OneXMM
             throw new NotImplementedException();
         }
 
-        internal static MySQLConnector CreateMySQLConnector()
+        public static IDBConnector CreateMySQLConnector()
         {
             var appPath = Path.Combine(Environment.CurrentDirectory, "Configuration\\MySQLSettings.txt");
             var settings = new Dictionary<string, string>();

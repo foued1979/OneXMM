@@ -31,6 +31,20 @@ namespace OneXMM.Communication
             new TableField("inputdate", "datetime not null")
             ];
 
+        public static readonly TableField[] Transactions = [
+            new TableField("timestamp", "datetime not null"),
+            new TableField("transactionHash", "varchar(80) not null"),
+            new TableField("transactionIndex", "varchar(34) not null"),
+            new TableField("blockHash", "varchar(100) not null"),
+            new TableField("blockNumber", "varchar(34) not null"),
+            new TableField("_from", "varchar(44)"),
+            new TableField("_to", "varchar(44)"),
+            new TableField("cumulativeGasUsed", "varchar(34) not null"),
+            new TableField("gasUsed", "varchar(34) not null"),
+            new TableField("effectiveGasPrice", "varchar(34) not null"),
+            new TableField("contractAddress", "varchar(44) not null"),
+            ];
+
         public static string GetFieldNamesWithoutId(string tableName)
         {
             TableField[]? fields = null;

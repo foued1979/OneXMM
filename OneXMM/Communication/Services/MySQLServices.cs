@@ -4,11 +4,12 @@ namespace OneXMM.Communication.Services
 {
     using OneXMM.Communication.MySQLRequests;
     using OneXMM.Communication.MySQLResults;
+    using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;
 
     internal static class MySQLServices
     {
-        private readonly static MySQLConnector _sqlConnector = Factory.CreateMySQLConnector();
+        private readonly static IDBConnector _sqlConnector = Factory.CreateMySQLConnector();
 
         public static void InsertQuote(HistoricalResult quote)
         {

@@ -3,10 +3,12 @@ using System.Runtime.CompilerServices;
 
 namespace OneXMM.Utils
 {
+    using Nethereum.RPC.Eth.DTOs;
+    using OneXMM.Communication;
     using OneXMM.Pricing;
     using OneXMM.Referential;
 
-    internal static class Tools
+    public static class Tools
     {
         // For a Call
         private const double _moneyness25 = -0.674489750196082;
@@ -107,6 +109,23 @@ namespace OneXMM.Utils
                     }
 
             return res;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string[] ToInsertData(this TransactionReceipt tx)
+        {
+            return [DateTime.Now.ToString(MySQLConnector.DatetimeFormat),
+                tx.TransactionHash,
+                tx.TransactionIndex.ToString(),
+                tx.BlockHash,
+                tx.BlockNumber.ToString(),
+                tx.From,
+                tx.To,
+                tx.CumulativeGasUsed.Value.ToString(),
+                tx.GasUsed.Value.ToString(),
+                tx.EffectiveGasPrice.Value.ToString(),
+                tx.ContractAddress
+            ];
         }
 
         /// <summary>

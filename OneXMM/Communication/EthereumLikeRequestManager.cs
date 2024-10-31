@@ -23,14 +23,14 @@ namespace OneXMM.Communication
                 var functionBuilder = contract.ContractBuilder.GetFunctionBuilder(functionType.ToString());
                 var function = contract.GetFunction(functionType.ToString());
 
-                _functionHasOutput.Add(functionType, functionBuilder.FunctionABI.OutputParameters.Length > 0);
+                _functionHasOutput.Add(functionType, functionBuilder.FunctionABI.OutputParameters.Length > 0 && functionBuilder.FunctionABI.Constant == true);
                 _functionsMapping.Add(functionType, function);
             }
         }
 
         public override dynamic ExecuteTask(FType functionType, params object[] parameters)
         {
-            if (_queueMapping[functionType])
+            if (_queueMapping[functionType] && _functionHasOutput[functionType])
             {
                 while (_queueMapping[functionType]) ;
                 return _lastResult[functionType];
@@ -39,11 +39,12 @@ namespace OneXMM.Communication
             {
                 _queueMapping[functionType] = true;
 
-                try
-                {
+                
                     var function = _functionsMapping[functionType];
 
-                    if (_functionHasOutput[functionType])
+                if (_functionHasOutput[functionType])
+                {
+                    try
                     {
 #if DEBUG
                         var response = function.CallAsync(function.CreateCallInput(parameters)).ConfigureAwait(false).GetAwaiter().GetResult();
@@ -53,22 +54,30 @@ namespace OneXMM.Communication
                         _lastResult[functionType] = res;
                         return res;
                     }
-                    else
+                    catch
+                    {
+                        return _lastResult[functionType];
+                    }
+                    finally
+                    {
+                        _queueMapping[functionType] = false;
+                    }
+                }
+                else
+                {
+                    try
                     {
                         var gasEstimate = function.EstimateGasAsync(parameters).GetAwaiter().GetResult();
                         var value = new HexBigInteger("0x0");
 
                         return function.SendTransactionAndWaitForReceiptAsync(_accountAddress, gasEstimate, value, new CancellationToken(), parameters).ConfigureAwait(false).GetAwaiter().GetResult();
                     }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("Transaction error", ex);
+                    }
                 }
-                catch
-                {
-                    return _lastResult[functionType];
-                }
-                finally
-                {
-                    _queueMapping[functionType] = false;
-                }
+                
             }
         }
     }

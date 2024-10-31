@@ -1,11 +1,12 @@
-﻿using OneXMM.Referential;
-using OneXMM.Referential.Assets;
-using OneXMM.Referential.Exchanges;
-using System;
+﻿using System;
 
 namespace OneXMM.Communication.MySQLResults
 {
-    internal struct FuturesResult
+    using OneXMM.Referential;
+    using OneXMM.Referential.Assets;
+    using OneXMM.Referential.Exchanges;
+
+    public struct FuturesResult
     {
         public int Id { get; set; }
         public string Symbol { get; set; }

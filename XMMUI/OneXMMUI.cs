@@ -3,6 +3,7 @@ using Nethereum.RPC.Eth.DTOs;
 using OneXMM;
 using OneXMM.Attributes;
 using OneXMM.Factories;
+using OneXMM.Interfaces;
 using OneXMM.Utils;
 using XMMUI.Configuration;
 using XMMUI.Content;
@@ -20,6 +21,7 @@ namespace XMMUI
 
         #endregion
 
+        private static IDBConnector _dbConnector = Factory.CreateMySQLConnector();
 
         public OneXMMUI()
         {
@@ -90,7 +92,16 @@ namespace XMMUI
                 parameters[i] = tokenParameterGrid.Rows[i].Cells[1].ToBlockchainObject((tokenInputFlowLayoutPanel.Controls[i] as ParameterDescription)!, _auto_manage_decimals);
             }
 
-            var res = _tokenRequestManager.ExecuteTask(selectedFunction.ToEnum<TokenFunctions>(), parameters);
+            dynamic res;
+
+            try
+            {
+                res = _tokenRequestManager.ExecuteTask(selectedFunction.ToEnum<TokenFunctions>(), parameters);
+            }
+            catch (Exception ex)
+            {
+                throw new NotImplementedException();
+            }
 
             if (_tokenFunctionOutputs.TryGetValue(selectedFunction, out var outputs))
             {
@@ -103,6 +114,8 @@ namespace XMMUI
             {
                 var txResult = res as TransactionReceipt;
                 tokenResultsGrid.Rows[0].Cells[1].Value = txResult.TransactionHash;
+
+                _dbConnector.InsertData(new OneXMM.Communication.MySQLRequests.InsertDataRequest(MySQLTables.transactions.ToString(), [txResult.ToInsertData()], MySQLInsertTypes.None));
             }
         }
     }

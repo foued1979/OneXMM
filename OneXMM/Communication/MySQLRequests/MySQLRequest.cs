@@ -2,9 +2,13 @@
 
 namespace OneXMM.Communication.MySQLRequests
 {
-    internal abstract class MySQLRequest<TResult> : MySQLRequest
+    using MySql.Data.MySqlClient;
+
+    public abstract class MySQLRequest<TResult> : MySQLRequest
         where TResult : struct
     {
+        protected MySqlDataReader _reader;
+
         public string TableName { get; }
 
         public MySQLRequest(string tableName)
@@ -12,10 +16,16 @@ namespace OneXMM.Communication.MySQLRequests
             TableName = tableName;
         }
 
-        public abstract TResult[] GetResults(MySql.Data.MySqlClient.MySqlDataReader reader);
+        public abstract TResult[] GetResults();
+
+        internal MySQLRequest<TResult> WithReader(MySql.Data.MySqlClient.MySqlDataReader reader)
+        {
+            _reader = reader;
+            return this;
+        }
     }
 
-    internal abstract class MySQLRequest
+    public abstract class MySQLRequest
     {
         public abstract string ToCmd();
     }

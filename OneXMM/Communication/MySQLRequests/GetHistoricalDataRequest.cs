@@ -13,13 +13,13 @@ namespace OneXMM.Communication.MySQLRequests
 
         public GetHistoricalDataRequest(string tableName) : base(tableName) { }
 
-        public override HistoricalResult[] GetResults(MySqlDataReader reader)
+        public override HistoricalResult[] GetResults()
         {
             var res = new List<HistoricalResult>();
 
-            while (reader.Read())
+            while (_reader.Read())
             {
-                res.Add(new HistoricalResult() { Symbol = reader.GetString(0), Timestamp = reader.GetDateTime(1), Value = reader.GetDouble(2) });
+                res.Add(new HistoricalResult() { Symbol = _reader.GetString(0), Timestamp = _reader.GetDateTime(1), Value = _reader.GetDouble(2) });
             }
 
             return res.ToArray();

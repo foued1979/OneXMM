@@ -5,8 +5,9 @@ using System.Text;
 namespace OneXMM.Communication
 {
     using OneXMM.Communication.MySQLRequests;
+    using OneXMM.Interfaces;
 
-    internal sealed class MySQLConnector
+    internal sealed class MySQLConnector : IDBConnector
     {
         public const string DateFormat = "yyyy-MM-dd";
         public const string DatetimeFormat = "yyyy-MM-dd HH:mm:ss";
@@ -27,7 +28,7 @@ namespace OneXMM.Communication
 
                 using (var reader = cmd.ExecuteReader())
                 {
-                    var tables = tableRequest.GetResults(reader);
+                    var tables = tableRequest.WithReader(reader).GetResults();
                     reader.Close();
 
                     foreach (MySQLTables table in Enum.GetValues(typeof(MySQLTables)))
@@ -45,7 +46,7 @@ namespace OneXMM.Communication
             {
                 cmd.CommandText = request.ToCmd();
                 using (var reader = cmd.ExecuteReader())
-                    return request.GetResults(reader);
+                    return request.WithReader(reader).GetResults();
             }
         }
 
@@ -64,14 +65,14 @@ namespace OneXMM.Communication
                     }
                     catch (MySqlException ex)
                     {
-                        if (ex.Code == 1602) continue;
+                        if (ex.Number == 1062) continue;
                         else throw new Exception("MySQL insert error", ex);
                     }
                 }
             }
         }
 
-        public static void CreateTables(MySql.Data.MySqlClient.MySqlConnection connection, MySQLTables table)
+        internal static void CreateTables(MySql.Data.MySqlClient.MySqlConnection connection, MySQLTables table)
         {
             using (var cmd = connection.CreateCommand())
             {
@@ -109,6 +110,16 @@ namespace OneXMM.Communication
                             else sb.Append($",{field.ColumnName} {field.Definition}");
                         }
                         sb.Append(",PRIMARY KEY (id),CONSTRAINT unique_option UNIQUE (symbol,exchange));");
+                        cmd.CommandText = sb.ToString();
+                        break;
+                    case MySQLTables.transactions:
+                        sb.Append($"CREATE TABLE {MySQLTables.transactions.ToString()} (");
+                        foreach (var field in TableDef.Transactions)
+                        {
+                            if (isFirstField) { sb.Append($"{field.ColumnName} {field.Definition}"); isFirstField = false; }
+                            else sb.Append($",{field.ColumnName} {field.Definition}");
+                        }
+                        sb.Append(",PRIMARY KEY (transactionHash));");
                         cmd.CommandText = sb.ToString();
                         break;
                 }

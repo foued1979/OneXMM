@@ -9,13 +9,13 @@ namespace OneXMM.Communication.MySQLRequests
     {
         public GetTablesRequest() : base("") { }
 
-        public override TableResult[] GetResults(MySqlDataReader reader)
+        public override TableResult[] GetResults()
         {
             var res = new List<TableResult>();
 
-            while (reader.Read())
+            while (_reader.Read())
             {
-                res.Add(new TableResult() { TableName = reader.GetString(0) });
+                res.Add(new TableResult() { TableName = _reader.GetString(0) });
             }
 
             return res.ToArray();

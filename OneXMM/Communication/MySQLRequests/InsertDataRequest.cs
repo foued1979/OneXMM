@@ -3,7 +3,7 @@ using System.Text;
 
 namespace OneXMM.Communication.MySQLRequests
 {
-    internal sealed class InsertDataRequest
+    public sealed class InsertDataRequest
     {
         public string TableName { get; }
         public string[][] DataToInsert { get; }

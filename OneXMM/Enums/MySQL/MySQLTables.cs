@@ -7,5 +7,6 @@ namespace OneXMM
         historical_prices,
         futures_ref,
         options_ref,
+        transactions,
     }
 }

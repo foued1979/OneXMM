@@ -6,7 +6,7 @@ namespace OneXMM.Communication.MySQLResults
     using OneXMM.Referential;
     using OneXMM.Referential.Exchanges;
 
-    internal struct OptionResult
+    public struct OptionResult
     {
         public int Id { get; set; }
         public string Symbol { get; set; }

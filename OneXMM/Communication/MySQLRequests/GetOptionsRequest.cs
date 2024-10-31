@@ -19,21 +19,21 @@ namespace OneXMM.Communication.MySQLRequests
             Pair = pair;
         }
 
-        public override OptionResult[] GetResults(MySqlDataReader reader)
+        public override OptionResult[] GetResults()
         {
             var res = new List<OptionResult>();
 
-            while (reader.Read())
+            while (_reader.Read())
             {
                 res.Add(new OptionResult()
                 {
-                    Id = reader.GetInt32(0),
-                    Symbol = reader.GetString(1),
-                    OptionType = reader.GetString(2).ToEnum<OptionTypes>(),
-                    Strike = reader.GetDouble(3),
-                    UndlSymbol = reader.GetString(4),
-                    Expiry = reader.GetString(5),
-                    Exchange = ExchangeServices.GetExchange(reader.GetString(6).ToEnum<Exchanges>())
+                    Id = _reader.GetInt32(0),
+                    Symbol = _reader.GetString(1),
+                    OptionType = _reader.GetString(2).ToEnum<OptionTypes>(),
+                    Strike = _reader.GetDouble(3),
+                    UndlSymbol = _reader.GetString(4),
+                    Expiry = _reader.GetString(5),
+                    Exchange = ExchangeServices.GetExchange(_reader.GetString(6).ToEnum<Exchanges>())
                 });
             }
 

@@ -6,6 +6,7 @@ namespace OneXMM.Referential
 {
     using OneXMM.Communication;
     using OneXMM.Communication.MySQLRequests;
+    using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;
     using OneXMM.Referential.Exchanges;
 
@@ -13,7 +14,7 @@ namespace OneXMM.Referential
     {
         public static bool IsInitiated { get; private set; } = false;
 
-        private readonly static MySQLConnector _sqlConnector = Factory.CreateMySQLConnector();
+        private readonly static IDBConnector _sqlConnector = Factory.CreateMySQLConnector();
         internal readonly static SortedDictionary<OneXMM.Exchanges, Exchange> _exchanges;
         internal readonly static SortedDictionary<Pair, (Futures[], Option[])> _instrumentsByPair;
 
