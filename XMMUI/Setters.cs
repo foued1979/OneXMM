@@ -12,7 +12,8 @@ namespace XMMUI
     public partial class OneXMMUI
     {
         private static IRequestManager<TokenFunctions> _tokenRequestManager;
-        private static SortedDictionary<string, Parameter[]> _tokenFunctions;
+        private static SortedDictionary<string, Parameter[]> _tokenFunctionParameters;
+        private static SortedDictionary<string, Parameter[]> _tokenFunctionOutputs;
 
         private void Set()
         {
@@ -34,13 +35,16 @@ namespace XMMUI
             if (attr.BlockchainType == BlockchainTypes.EthereumLike)
             {
                 _tokenRequestManager = ContractFactory.CreateRequestManager<TokenFunctions>(_selectedBlockchain);
-                _tokenFunctions = new SortedDictionary<string, Parameter[]>();
+                _tokenFunctionParameters = new SortedDictionary<string, Parameter[]>();
+                _tokenFunctionOutputs = new SortedDictionary<string, Parameter[]>();
 
                 var functions = ContractFactory.GetTokenContractFunctions(_selectedBlockchain);
 
                 foreach (var function in functions)
                 {
-                    _tokenFunctions.Add(CleanSignatureName(function.Signature), function.InputParameters);
+                    var cleanName = CleanSignatureName(function.Signature);
+                    _tokenFunctionParameters.Add(cleanName, function.InputParameters);
+                    if (function.Constant) _tokenFunctionOutputs.Add(cleanName, function.OutputParameters);
                 }    
             }
             else

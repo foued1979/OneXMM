@@ -2,6 +2,8 @@
 
 namespace OneXMM
 {
+    using OneXMM.Attributes;
+
     public enum TokenFunctions
     {
         allocate,
@@ -12,6 +14,7 @@ namespace OneXMM
         addValidChainId,
         balanceOf,
         burn,
+        [ContractFunction("rate", Config.RatePrecision)]
         buyBack,
         cancelBridgeIn,
         cancelBridgeOut,
@@ -26,10 +29,13 @@ namespace OneXMM
         removeETHDepositAuthorization,
         removeETHExchangeAuthorization,
         removeExchangeAuthorizationForToken,
+        [ContractFunction("exchangeRate", Config.RatePrecision)]
         setETHDepositExchangeRate,
         transfer,
         transferFrom,
+        [ContractFunction("exchangeRate", Config.RatePrecision)]
         updateETHExchangeRate,
+        [ContractFunction("exchangeRate", Config.RatePrecision)]
         updateTokenExchangeRate,
         validateBridgeIn,
         validateBridgeOut

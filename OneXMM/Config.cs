@@ -21,6 +21,12 @@ namespace OneXMM
         internal readonly static SymbolMapping _symbolMapping;
         internal readonly static SortedDictionary<Pair, Dictionary<FixingIntervals, string[]>> _poolUpdateCfg = new SortedDictionary<Pair, Dictionary<FixingIntervals, string[]>>();
 
+        #region Public Properties
+
+        public const int RatePrecision = 10000;
+
+        #endregion
+
         static Config()
         {
             _settings = SetSettings();

@@ -15,6 +15,14 @@ namespace OneXMM.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TAttr[]? GetAttributesForEnum<TEnum, TAttr>(this TEnum e)
+            where TEnum : Enum
+            where TAttr : Attribute
+        {
+            return typeof(TEnum).GetField(e.ToString())?.GetCustomAttributes(typeof(TAttr))?.Select(a => (TAttr)a).ToArray() ?? null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? ToEnum<T>(this string s) 
             where T : Enum
         {

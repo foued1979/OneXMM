@@ -45,8 +45,10 @@ namespace OneXMM.Communication
 
                     if (_functionHasOutput[functionType])
                     {
+#if DEBUG
                         var response = function.CallAsync(function.CreateCallInput(parameters)).ConfigureAwait(false).GetAwaiter().GetResult();
-                        var res = function.CallDecodingToDefaultAsync(parameters).GetAwaiter().GetResult();
+#endif
+                        var res = function.CallDecodingToDefaultAsync(parameters).ConfigureAwait(false).GetAwaiter().GetResult();
 
                         _lastResult[functionType] = res;
                         return res;
