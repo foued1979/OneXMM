@@ -14,9 +14,9 @@ namespace OneXMM.Communication
 
         private MySqlConnection _connection;
 
-        public MySQLConnector(string user, string pwd, string marketdataDB, int port)
+        public MySQLConnector(string server, string user, string pwd, string marketdataDB, int port)
         {
-            var connectionString = $"server=127.0.0.1;port={port};uid={user};pwd={pwd};database={marketdataDB}";
+            var connectionString = $"server={server};port={port};uid={user};pwd={pwd};database={marketdataDB}";
             _connection = new MySqlConnection(connectionString);
             _connection.Open();
 

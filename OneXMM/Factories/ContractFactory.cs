@@ -9,8 +9,10 @@ namespace OneXMM.Factories
     using OneXMM.Attributes;
     using OneXMM.Communication;
     using OneXMM.Interfaces;
+    using OneXMM.Referential.Assets;
     using OneXMM.Resources.RawHardhatArtifact;
     using OneXMM.Utils;
+    using Org.BouncyCastle.Cms;
 
     public static class ContractFactory
     {
@@ -29,14 +31,27 @@ namespace OneXMM.Factories
             return _tokenContracts[blockchain].ContractBuilder.ContractABI.Functions;
         }
 
-        public static IRequestManager<FType> CreateRequestManager<FType>(Blockchains blockchain)
-            where FType : Enum
+        public static IRequestManager<TokenFunctions> CreateTokenRequestManager(Blockchains blockchain)
         {
             var attr = blockchain.GetAttributeForEnum<Blockchains, BlockchainDetailsAttribute>()!;
 
             if (attr.BlockchainType == BlockchainTypes.EthereumLike)
             {
-                return new EthereumLikeRequestManager<FType>(new EthereumAccount((int)blockchain), GetContract<FType>(blockchain));
+                return new EthereumLikeRequestManager<TokenFunctions>(new EthereumAccount((int)blockchain), GetContract<TokenFunctions>(blockchain));
+            }
+
+            throw new NotImplementedException();
+        }
+
+        public static IRequestManager<PoolFunctions> CreatePoolRequestManager(Pair pair, KycStatus kycStatus)
+        {
+            var blockchain = pair.Chain;
+
+            var attr = blockchain.GetAttributeForEnum<Blockchains, BlockchainDetailsAttribute>()!;
+
+            if (attr.BlockchainType == BlockchainTypes.EthereumLike)
+            {
+                return new EthereumLikeRequestManager<PoolFunctions>(new EthereumAccount((int)blockchain), GetContract<PoolFunctions>(pair, kycStatus));
             }
 
             throw new NotImplementedException();
@@ -101,7 +116,17 @@ namespace OneXMM.Factories
 
             // The Infura token to communicate with the blockchain
             // When using Hardhat, this header is not important
-            if (!isTestMode) httpClient.DefaultRequestHeaders.Add("user", "7cb2a61ab7d84b6a995f7ec68ac2bc89");
+            if (!isTestMode)
+            {
+                switch (Config.NodeInfo.Node)
+                {
+                    case Nodes.Infura:
+                        httpClient.DefaultRequestHeaders.Add("user", Config.NodeInfo.ApiKey);
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
 
             var attr = isTestMode
                 ? Blockchains.HardHat.GetAttributeForEnum<Blockchains, BlockchainDetailsAttribute>()

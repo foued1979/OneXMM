@@ -4,6 +4,8 @@ namespace OneXMM
 {
     using OneXMM.Attributes;
 
+    // Fixing Intervals must be sorted, from smaller to bigger interval
+    // The sorting is necessary for Tempos::CheckRedundancy
     public enum FixingIntervals
     {
         [FixingInterval(60)]

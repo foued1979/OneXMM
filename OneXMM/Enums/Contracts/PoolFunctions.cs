@@ -20,6 +20,7 @@ namespace OneXMM
         getCompensationTokenBalance,
         getFixings,
         getFixingsFromTo,
+        getAllLastRateIndices,
         getLastRateIndices,
         getMissedFixings,
         getPoolPendingPositions,

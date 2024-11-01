@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OneXMM
+namespace OneXMM.Services
 {
     using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;

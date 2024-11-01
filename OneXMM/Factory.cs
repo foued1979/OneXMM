@@ -43,7 +43,7 @@ namespace OneXMM
 
         public static IDBConnector CreateMySQLConnector()
         {
-            var appPath = Path.Combine(Environment.CurrentDirectory, "Configuration\\MySQLSettings.txt");
+            var appPath = Path.Combine(AppContext.BaseDirectory, "Configuration\\MySQLSettings.txt");
             var settings = new Dictionary<string, string>();
 
             using (var fileReader = new StreamReader(appPath))
@@ -57,7 +57,7 @@ namespace OneXMM
                 }
             }
 
-            return new MySQLConnector(settings["USER"], settings["PASSWORD"], settings["MARKETDATA_DB"], Convert.ToInt32(settings["PORT"]));
+            return new MySQLConnector(settings["SERVER"], settings["USER"], settings["PASSWORD"], settings["MARKETDATA_DB"], Convert.ToInt32(settings["PORT"]));
         }
     }
 }

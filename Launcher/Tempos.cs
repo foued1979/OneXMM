@@ -4,8 +4,8 @@ using System.Timers;
 namespace Launcher
 {
     using OneXMM;
-    using OneXMM.Referential;
     using OneXMM.Referential.Assets;
+    using OneXMM.Services;
     using OneXMM.Utils;
     using System.Threading;
 
@@ -14,21 +14,40 @@ namespace Launcher
         #region Private Fields
 
         private static Dictionary<FixingIntervals, List<Pair>> _pairsByUpdateInterval = new Dictionary<FixingIntervals, List<Pair>>(20);
+        private static SortedDictionary<Pair, Dictionary<FixingIntervals, FixingIntervals[]>> _redundantIntervals = new SortedDictionary<Pair, Dictionary<FixingIntervals, FixingIntervals[]>>();
         private static List<System.Timers.Timer> _timers = new List<System.Timers.Timer>(20);
         private static Dictionary<System.Timers.Timer, FixingIntervals> _timersToFixingInterval = new Dictionary<System.Timers.Timer, FixingIntervals>(20);
 
         #endregion
 
-        public static DateTime Today;
+        public static bool TempoStarted { get; private set; } = false;
         public static List<Pair> PairsInScope = new List<Pair>(100);        
         
-        public static void AddPairToTempos(Pair pair, FixingIntervals[] fixingIntervals)
+        public static void AddPairToTempos(Pair pair, OneXMM.Utils.Tools.IntervalSelection intervalSelection)
         {
             if (AddPairToScope(pair))
             {
                 VolatilityServices.AddPair(pair);
+                PoolRequestManagerServices.AddPair(pair);
 
-                foreach (var fixingInterval in fixingIntervals)
+                if (intervalSelection.redundantIntervals.Length != 0)
+                {
+                    Dictionary<FixingIntervals, FixingIntervals[]>? redundants = null;
+
+                    if (!_redundantIntervals.TryGetValue(pair, out redundants))
+                    {
+                        redundants = new Dictionary<FixingIntervals, FixingIntervals[]>();
+                        _redundantIntervals.Add(pair, redundants);
+                    }
+
+                    foreach (var redundantInterval in intervalSelection.redundantIntervals)
+                    {
+                        if (redundants.ContainsKey(redundantInterval.Key)) redundants[redundantInterval.Key] = redundants[redundantInterval.Key].Append(redundantInterval.Value).ToArray();
+                        else redundants.Add(redundantInterval.Key, [redundantInterval.Value]);
+                    }
+                }
+
+                foreach (var fixingInterval in intervalSelection.activeIntervals)
                 {
                     List<Pair>? listOfPairs = null;
 
@@ -39,6 +58,13 @@ namespace Launcher
 
                         var newTimer = new System.Timers.Timer();
                         newTimer.Elapsed += NewTimer_Elapsed;
+
+                        if (TempoStarted) 
+                        { 
+                            newTimer.Interval = GetTimerInterval(fixingInterval); 
+                            newTimer.Start(); 
+                        }
+
                         _timers.Add(newTimer);
                         _timersToFixingInterval.Add(newTimer, fixingInterval);
                     }
@@ -50,6 +76,8 @@ namespace Launcher
 
         public static void LaunchTempos()
         {
+            TempoStarted = true;
+
             for (int i = 0; i < _timersToFixingInterval.Count; ++i)
             {
                 var index = i;
@@ -65,14 +93,15 @@ namespace Launcher
 #endif
                     timer.Key.Start();
                 });
-            } 
+            }
         }
 
         private static void NewTimer_Elapsed(object? sender, ElapsedEventArgs e)
         {
-            if (Today != DateTime.Today) ExchangeServices.UpdateOptionAndFuturesReferential(PairsInScope);
+            if (ExchangeServices.ReferentialDate != DateTime.Today) ExchangeServices.UpdateOptionAndFuturesReferential(PairsInScope);
 
             var timer = (sender as System.Timers.Timer)!;
+
             var fixingInterval = _timersToFixingInterval[timer];
             var pairsToUpdate = _pairsByUpdateInterval[fixingInterval];
 
@@ -86,8 +115,11 @@ namespace Launcher
                     continue;
                 }
 
+                // We check if we should use a bigger fixing interval, if the pair as redundant frequencies
+                fixingInterval = CheckRedundancy(fixingInterval, pair);
+
                 var exchange = ExchangeServices.GetExchange(pair);
-                if (exchange.IsCutoffTime()) ExchangeServices.UpdateOptionAndFuturesReferential(pair);
+                if (exchange.IsCutoffPast()) ExchangeServices.UpdateOptionAndFuturesReferential(pair);
 
                 if (!ExchangeServices.GetRefInstrumentsForPair(pair, out var refInstr)) throw new Exception($"Tempos - The pair {pair.Symbol} is not marked as correlated vol but there are no ref instruments.");
 
@@ -103,6 +135,57 @@ namespace Launcher
             }
 
             timer.Interval = GetTimerInterval(fixingInterval);
+        }
+
+        private static FixingIntervals CheckRedundancy(FixingIntervals fixingInterval, Pair pair)
+        {
+            var currentInterval = fixingInterval;
+
+            if (_redundantIntervals.TryGetValue(pair, out var redundancies) && redundancies.TryGetValue(fixingInterval, out var redundantIntervals))
+            {
+                var now = DateTime.Now;
+
+                // Since we set up the timer to throw just before a fixing period (up to 6 seconds before)
+                // if ever the number of seconds is bigger than 50s, we add 1 minute to the time
+                if (now.Minute > 50) now.AddMinutes(1);
+
+                foreach (var interval in redundantIntervals)
+                {
+                    switch (interval)
+                    {
+                        // There cannot be any 1 minute interval
+                        case FixingIntervals.TwoMinutes:
+                            if (now.Minute % 2 == 0 && (int)currentInterval < (int)interval) currentInterval = interval; 
+                            break;
+                        case FixingIntervals.ThreeMinutes:
+                            if (now.Minute % 3 == 0 && (int)currentInterval < (int)interval) currentInterval = interval;
+                            break;
+                        case FixingIntervals.FiveMinutes:
+                            if (now.Minute % 5 == 0 && (int)currentInterval < (int)interval) currentInterval = interval;
+                            break;
+                        case FixingIntervals.TenMinutes:
+                            if (now.Minute % 10 == 0 && (int)currentInterval < (int)interval) currentInterval = interval;
+                            break;
+                        case FixingIntervals.TwentyMinutes:
+                            if (now.Minute % 20 == 0 && (int)currentInterval < (int)interval) currentInterval = interval;
+                            break;
+                        case FixingIntervals.ThirtyMinutes:
+                            if (now.Minute % 30 == 0 && (int)currentInterval < (int)interval) currentInterval = interval;
+                            break;
+                        case FixingIntervals.OneHour:
+                            if (now.Minute == 0 && (int)currentInterval < (int)interval) currentInterval = interval;
+                            break;
+                        case FixingIntervals.TwoHours:
+                            if (now.Hour % 2 == 0 && (int)currentInterval < (int)interval) currentInterval = interval;
+                            break;
+                        case FixingIntervals.FourHours:
+                            if (now.Hour % 4 == 0 && (int)currentInterval < (int)interval) currentInterval = interval;
+                            break;
+                    }
+                }
+            }
+
+            return currentInterval;
         }
 
         private static int GetTimerInterval(FixingIntervals interval)

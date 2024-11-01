@@ -10,6 +10,7 @@
     <None Remove="Configuration\ContractsReferential.json" />
     <None Remove="Configuration\ExchangeSettings.json" />
     <None Remove="Configuration\MySQLSettings.txt" />
+    <None Remove="Configuration\NodeSettings.txt" />
     <None Remove="Configuration\Referential.json" />
     <None Remove="Configuration\SymbolMapping.json" />
     <None Remove="Resources\Token.json" />
@@ -20,6 +21,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Configuration\MySQLSettings.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Configuration\NodeSettings.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Configuration\SymbolMapping.json">

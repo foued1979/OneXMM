@@ -15,7 +15,7 @@ namespace OneXMM.Interfaces
 
         bool ExchangeUsesUniversalTime { get; }
 
-        bool IsCutoffTime();
+        bool IsCutoffPast();
 
         DateTime ToExpiry(string expiry);
 

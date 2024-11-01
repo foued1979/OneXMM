@@ -4,8 +4,8 @@ namespace OneXMM.Communication.MySQLRequests
 {
     using MySql.Data.MySqlClient;
     using OneXMM.Communication.MySQLResults;
-    using OneXMM.Referential;
     using OneXMM.Referential.Assets;
+    using OneXMM.Services;
     using OneXMM.Utils;
 
     internal sealed class GetOptionsRequest : MySQLRequest<OptionResult>

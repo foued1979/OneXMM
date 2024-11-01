@@ -1,4 +1,5 @@
 ﻿PORT=3306
 USER=root
 PASSWORD=FouedKoi2017#!
+SERVER=127.0.0.1
 MARKETDATA_DB=market_data

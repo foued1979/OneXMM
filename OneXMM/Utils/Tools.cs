@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 namespace OneXMM.Utils
 {
     using Nethereum.RPC.Eth.DTOs;
+    using OneXMM.Attributes;
     using OneXMM.Communication;
     using OneXMM.Pricing;
     using OneXMM.Referential;
@@ -13,6 +14,7 @@ namespace OneXMM.Utils
         // For a Call
         private const double _moneyness25 = -0.674489750196082;
         private const double _minExp = 0.00136986301369863;
+        public record IntervalSelection(FixingIntervals[] activeIntervals, KeyValuePair<FixingIntervals, FixingIntervals>[] redundantIntervals);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsAround(this DateTime d, DateTime aroundDate)
@@ -85,6 +87,41 @@ namespace OneXMM.Utils
         public static void AddRange(this Dictionary<DateTime, SABR> dict, SABR[] smiles)
         {
             foreach (var s in smiles) dict.TryAdd(s.SmileExpiry, s);
+        }
+
+        public static IntervalSelection SplitIntervals(FixingIntervals[] intervals)
+        {
+            var remainingIntervals = new List<FixingIntervals>(intervals.Length) { intervals[0] };
+            var listRedundantIntervals = new List<KeyValuePair<FixingIntervals, FixingIntervals>>(intervals.Length - 1);
+            var tempos = new List<int>(intervals.Length) { intervals[0].GetAttributeForEnum<FixingIntervals, FixingIntervalAttribute>()!.TimeInSeconds };
+
+            for (int i = 1; i < intervals.Length; ++i)
+            {
+                var tempo = intervals[i].GetAttributeForEnum<FixingIntervals, FixingIntervalAttribute>()!.TimeInSeconds;
+                var isRedundant = false;
+
+                for(int j = 0; j < remainingIntervals.Count; ++j)
+                {
+                    if (tempo == tempos[j]) { isRedundant = true; listRedundantIntervals.Add(new KeyValuePair<FixingIntervals, FixingIntervals>(remainingIntervals[j], intervals[i])); break; }
+                    if (tempo > tempos[j])
+                    {
+                        var r = tempo % tempos[j];
+                        if (r == 0) { isRedundant = true; listRedundantIntervals.Add(new KeyValuePair<FixingIntervals, FixingIntervals>(remainingIntervals[j], intervals[i])); break; }
+                    }
+                    else
+                    {
+                        var r = tempos[j] % tempo;
+                        if (r == 0) { isRedundant = true; listRedundantIntervals.Add(new KeyValuePair<FixingIntervals, FixingIntervals>(remainingIntervals[j], intervals[i])); break; }
+                    }
+                }
+
+                if (isRedundant) continue;
+
+                remainingIntervals.Add(intervals[i]);
+                tempos.Add(tempo);
+            }
+
+            return new IntervalSelection(remainingIntervals.ToArray(), listRedundantIntervals.ToArray());
         }
 
         public static SortedDictionary<Option, double> FilterByMaturity(this SortedDictionary<Option, double> allOptions, DateTime maturity)

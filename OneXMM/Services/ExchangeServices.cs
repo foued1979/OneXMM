@@ -1,8 +1,9 @@
 ﻿using System;
 
 using System.Runtime.CompilerServices;
+using OneXMM.Referential;
 
-namespace OneXMM.Referential
+namespace OneXMM.Services
 {
     using OneXMM.Communication;
     using OneXMM.Communication.MySQLRequests;
@@ -13,25 +14,29 @@ namespace OneXMM.Referential
     public static class ExchangeServices
     {
         public static bool IsInitiated { get; private set; } = false;
+        public static DateTime ReferentialDate { get; set; }
 
         private readonly static IDBConnector _sqlConnector = Factory.CreateMySQLConnector();
-        internal readonly static SortedDictionary<OneXMM.Exchanges, Exchange> _exchanges;
+        internal readonly static SortedDictionary<Exchanges, Exchange> _exchanges;
         internal readonly static SortedDictionary<Pair, (Futures[], Option[])> _instrumentsByPair;
 
         public static void Init() { IsInitiated = true; }
 
         static ExchangeServices()
         {
-            _exchanges = new SortedDictionary<OneXMM.Exchanges, Exchange>();
+            _exchanges = new SortedDictionary<Exchanges, Exchange>();
 
-            foreach (OneXMM.Exchanges exchange in Enum.GetValues(typeof(OneXMM.Exchanges)))
+            foreach (Exchanges exchange in Enum.GetValues(typeof(Exchanges)))
             {
-                if (exchange == OneXMM.Exchanges.None) continue;
+                if (exchange == Exchanges.None) continue;
                 AddExchange(exchange);
             }
 
             _instrumentsByPair = new SortedDictionary<Pair, (Futures[], Option[])>();
+
             var today = DateTime.Today;
+            ReferentialDate = today;
+
             var todayStr = today.ToString(MySQLConnector.DateFormat);
 
             foreach (var pair in Config.GetPairs())
@@ -91,13 +96,13 @@ namespace OneXMM.Referential
             }
         }
 
-        public static void AddExchange(OneXMM.Exchanges exchange)
+        public static void AddExchange(Exchanges exchange)
         {
             if (_exchanges.ContainsKey(exchange)) return;
 
             switch (exchange)
             {
-                case OneXMM.Exchanges.Deribit:
+                case Exchanges.Deribit:
                     _exchanges.Add(exchange, new Deribit(Config.IsTestMode));
                     break;
                 default:
@@ -159,7 +164,7 @@ namespace OneXMM.Referential
                 }
         }
 
-        public static Exchange GetExchange(OneXMM.Exchanges exchange) => _exchanges[exchange];
+        public static Exchange GetExchange(Exchanges exchange) => _exchanges[exchange];
 
         /// <summary>
         /// Returns the reference exchange for the pair.

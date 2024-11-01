@@ -3,8 +3,8 @@
 namespace OneXMM.Communication.MySQLRequests
 {
     using OneXMM.Communication.MySQLResults;
-    using OneXMM.Referential;
     using OneXMM.Referential.Assets;
+    using OneXMM.Services;
     using OneXMM.Utils;
 
     public sealed class GetFuturesRequest : MySQLRequest<FuturesResult>

@@ -36,6 +36,9 @@
             autoManageDecimalsToolStripMenuItem = new ToolStripMenuItem();
             contractsControl = new TabControl();
             tokenTab = new TabPage();
+            tokenResultsGrid = new DataGridView();
+            outputNameCol = new DataGridViewTextBoxColumn();
+            outputValueCol = new DataGridViewTextBoxColumn();
             tokenSendBtn = new Button();
             tokenFunctionDescrGroup = new GroupBox();
             label1 = new Label();
@@ -47,16 +50,12 @@
             tokenParamNameCol = new DataGridViewTextBoxColumn();
             tokenParamValueCol = new DataGridViewTextBoxColumn();
             tokenFunctionList = new ListBox();
-            tabPage2 = new TabPage();
-            tokenResultsGrid = new DataGridView();
-            outputNameCol = new DataGridViewTextBoxColumn();
-            outputValueCol = new DataGridViewTextBoxColumn();
             mainMenu.SuspendLayout();
             contractsControl.SuspendLayout();
             tokenTab.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)tokenResultsGrid).BeginInit();
             tokenFunctionDescrGroup.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)tokenParameterGrid).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)tokenResultsGrid).BeginInit();
             SuspendLayout();
             // 
             // mainMenu
@@ -109,7 +108,6 @@
             // 
             contractsControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             contractsControl.Controls.Add(tokenTab);
-            contractsControl.Controls.Add(tabPage2);
             contractsControl.Location = new Point(12, 27);
             contractsControl.Name = "contractsControl";
             contractsControl.SelectedIndex = 0;
@@ -130,6 +128,34 @@
             tokenTab.TabIndex = 0;
             tokenTab.Text = "Token";
             tokenTab.UseVisualStyleBackColor = true;
+            // 
+            // tokenResultsGrid
+            // 
+            tokenResultsGrid.AllowUserToAddRows = false;
+            tokenResultsGrid.AllowUserToDeleteRows = false;
+            tokenResultsGrid.AllowUserToResizeRows = false;
+            tokenResultsGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            tokenResultsGrid.Columns.AddRange(new DataGridViewColumn[] { outputNameCol, outputValueCol });
+            tokenResultsGrid.Location = new Point(581, 157);
+            tokenResultsGrid.Name = "tokenResultsGrid";
+            tokenResultsGrid.Size = new Size(425, 193);
+            tokenResultsGrid.TabIndex = 4;
+            // 
+            // outputNameCol
+            // 
+            outputNameCol.HeaderText = "Name";
+            outputNameCol.MaxInputLength = 40;
+            outputNameCol.Name = "outputNameCol";
+            outputNameCol.ReadOnly = true;
+            outputNameCol.Width = 125;
+            // 
+            // outputValueCol
+            // 
+            outputValueCol.HeaderText = "Value";
+            outputValueCol.MaxInputLength = 6000;
+            outputValueCol.Name = "outputValueCol";
+            outputValueCol.ReadOnly = true;
+            outputValueCol.Width = 225;
             // 
             // tokenSendBtn
             // 
@@ -244,44 +270,6 @@
             tokenFunctionList.TabIndex = 0;
             tokenFunctionList.SelectedIndexChanged += tokenFunctionList_SelectedIndexChanged;
             // 
-            // tabPage2
-            // 
-            tabPage2.Location = new Point(4, 24);
-            tabPage2.Name = "tabPage2";
-            tabPage2.Padding = new Padding(3);
-            tabPage2.Size = new Size(1012, 409);
-            tabPage2.TabIndex = 1;
-            tabPage2.Text = "tabPage2";
-            tabPage2.UseVisualStyleBackColor = true;
-            // 
-            // tokenResultsGrid
-            // 
-            tokenResultsGrid.AllowUserToAddRows = false;
-            tokenResultsGrid.AllowUserToDeleteRows = false;
-            tokenResultsGrid.AllowUserToResizeRows = false;
-            tokenResultsGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            tokenResultsGrid.Columns.AddRange(new DataGridViewColumn[] { outputNameCol, outputValueCol });
-            tokenResultsGrid.Location = new Point(581, 157);
-            tokenResultsGrid.Name = "tokenResultsGrid";
-            tokenResultsGrid.Size = new Size(425, 193);
-            tokenResultsGrid.TabIndex = 4;
-            // 
-            // outputNameCol
-            // 
-            outputNameCol.HeaderText = "Name";
-            outputNameCol.MaxInputLength = 40;
-            outputNameCol.Name = "outputNameCol";
-            outputNameCol.ReadOnly = true;
-            outputNameCol.Width = 125;
-            // 
-            // outputValueCol
-            // 
-            outputValueCol.HeaderText = "Value";
-            outputValueCol.MaxInputLength = 6000;
-            outputValueCol.Name = "outputValueCol";
-            outputValueCol.ReadOnly = true;
-            outputValueCol.Width = 225;
-            // 
             // OneXMMUI
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -297,10 +285,10 @@
             mainMenu.PerformLayout();
             contractsControl.ResumeLayout(false);
             tokenTab.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)tokenResultsGrid).EndInit();
             tokenFunctionDescrGroup.ResumeLayout(false);
             tokenFunctionDescrGroup.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)tokenParameterGrid).EndInit();
-            ((System.ComponentModel.ISupportInitialize)tokenResultsGrid).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -314,7 +302,6 @@
         private ToolStripMenuItem hardhatToolStripMenuItem;
         private TabControl contractsControl;
         private TabPage tokenTab;
-        private TabPage tabPage2;
         private ListBox tokenFunctionList;
         private GroupBox tokenFunctionDescrGroup;
         private DataGridView tokenParameterGrid;

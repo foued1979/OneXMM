@@ -51,10 +51,10 @@ namespace OneXMM.Referential.Exchanges
             Task.Factory.StartNew(() => Listen());
         }
 
-        public bool IsCutoffTime()
+        public bool IsCutoffPast()
         {
-            var now = DateTime.Now;
-            return now.Hour == Cutoff.Hours && now.Minute == Cutoff.Minutes && now.Second == Cutoff.Seconds;
+            var cutoff = DateTime.Today.Add(Cutoff);
+            return DateTime.Now.CompareTo(cutoff) >= 0;
         }
 
         public abstract Option[] LoadOptions(Pair pair);

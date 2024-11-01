@@ -40,40 +40,46 @@
       "CoinId": 0,
       "BaseId": 4,
       "RefExchange": "Deribit",
-      "PoolSettings": [
-        {
-          "Term": "1D",
-          "FixingInterval": "FiveMinutes"
-        },
-        {
-          "Term": "1W",
-          "FixingInterval": "TenMinutes"
-        },
-        {
-          "Term": "2W",
-          "FixingInterval": "FifteenMinutes"
-        }
-      ],
-      "CorrelatedVol": false
-    },
+      "PoolSettings": {
+        "NonKYC": [
+          {
+            "Term": "1D",
+            "FixingInterval": "FiveMinutes"
+          },
+          {
+            "Term": "1W",
+            "FixingInterval": "TenMinutes"
+          },
+          {
+            "Term": "2W",
+            "FixingInterval": "FifteenMinutes"
+          }
+        ],
+        "KYC": []
+      },
+        "CorrelatedVol": false
+      },
     {
       "CoinId": 1,
       "BaseId": 4,
       "RefExchange": "Deribit",
-      "PoolSettings": [
-        {
-          "Term": "1D",
-          "FixingInterval": "FiveMinutes"
-        },
-        {
-          "Term": "1W",
-          "FixingInterval": "TenMinutes"
-        },
-        {
-          "Term": "2W",
-          "FixingInterval": "FifteenMinutes"
-        }
-      ],
+      "PoolSettings": {
+        "NonKYC": [
+          {
+            "Term": "1D",
+            "FixingInterval": "FiveMinutes"
+          },
+          {
+            "Term": "1W",
+            "FixingInterval": "TenMinutes"
+          },
+          {
+            "Term": "2W",
+            "FixingInterval": "FifteenMinutes"
+          }
+        ],
+        "KYC": []
+      },
       "CorrelatedVol": false
     }
   ]

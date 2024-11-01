@@ -1,0 +1,2 @@
+﻿NORE_TYPE=Infura
+NODE_API_KEY=7cb2a61ab7d84b6a995f7ec68ac2bc89

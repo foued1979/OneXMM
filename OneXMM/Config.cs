@@ -3,10 +3,12 @@ using System.Data;
 
 namespace OneXMM
 {
+    using OneXMM.Communication;
     using OneXMM.Configuration;
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
     using System.Runtime.CompilerServices;
+    using static OneXMM.Utils.Utils;
 
     public static class Config
     {
@@ -19,16 +21,19 @@ namespace OneXMM
         internal readonly static Configuration.ContractsReferential _contractsReferential;
         internal readonly static Configuration.Referential _referential;
         internal readonly static SymbolMapping _symbolMapping;
-        internal readonly static SortedDictionary<Pair, Dictionary<FixingIntervals, string[]>> _poolUpdateCfg = new SortedDictionary<Pair, Dictionary<FixingIntervals, string[]>>();
+        internal readonly static SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<FixingIntervals, string[]>>> _poolUpdateCfg = new SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<FixingIntervals, string[]>>>();
 
         #region Public Properties
 
         public const int RatePrecision = 10000;
+        public static NodeInfo NodeInfo { get; private set; }
 
         #endregion
 
         static Config()
         {
+            ReadNodeInfo();
+
             _settings = SetSettings();
             _symbolMapping = SetSymbolMapping();
             _contractsReferential = SetContractsRef();
@@ -80,12 +85,38 @@ namespace OneXMM
         }
 
         /// <summary>
+        /// Gets the sorted pool maturities for a Pair.
+        /// </summary>
+        /// <param name="pair">The <see cref="Pair"/>.</param>
+        public static PoolMaturities[] GetPoolMaturities(Pair pair)
+        {
+            var maturities = new List<PoolMaturities>(Enum.GetValues<PoolMaturities>().Length);
+
+            foreach (var fixingIntervalDetails in _poolUpdateCfg[pair])
+            {
+                foreach (var matuStr in fixingIntervalDetails.Value)
+                {
+                    var matu = matuStr.ToPoolMaturity();
+
+                    if (maturities.Contains(matu)) continue;
+                    maturities.Add(matu);
+                }
+            }
+
+            maturities.Sort(new PoolMaturityComparer());
+
+            return maturities.ToArray();
+        }
+
+        /// <summary>
         /// Returns the fixing intervals which are used for a pair.
         /// </summary>
-        public static FixingIntervals[] GetFixingIntervalsForPair(Pair pair)
+        public static Tools.IntervalSelection GetFixingIntervalsForPair(Pair pair)
         {
             var pairDef = _referential.GetPairDef(pair);
-            return pairDef.PoolSettings.Select(ps =>  ps.FixingInterval).ToArray();
+            var fixingIntervals = pairDef.PoolSettings.Select(ps =>  ps.FixingInterval).ToArray();
+
+            return Tools.SplitIntervals(fixingIntervals);
         }
         
         /// <summary>
@@ -186,6 +217,25 @@ namespace OneXMM
         {
             var appPath = Environment.CurrentDirectory;
             return Utils.Utils.ConvertFileToObject<SymbolMapping>(Path.Combine(appPath, "Configuration\\SymbolMapping.json")) ?? throw new Exception("ReferentialData - Issue reading SymbolMapping.");
+        }
+
+        private static void ReadNodeInfo()
+        {
+            var appPath = Path.Combine(AppContext.BaseDirectory, "Configuration\\NodeSettings.txt");
+            var settings = new Dictionary<string, string>();
+
+            using (var fileReader = new StreamReader(appPath))
+            {
+                var line = "";
+
+                while (!string.IsNullOrEmpty(line = fileReader.ReadLine()))
+                {
+                    var cmp = line.Split('=');
+                    settings.Add(cmp[0], cmp[1]);
+                }
+            }
+
+            NodeInfo = new NodeInfo(settings["NORE_TYPE"].ToEnum<Nodes>(), settings["NODE_API_KEY"]);
         }
     }
 }
