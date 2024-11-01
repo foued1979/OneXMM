@@ -143,6 +143,19 @@ namespace OneXMM.Referential.Exchanges
             return date;
         }
 
+        public DateTime ToExpiry(DateTime expiry)
+        {
+            var date = new DateTime(expiry.Year, expiry.Month, expiry.Day).Add(Cutoff);
+
+            if (ExchangeUsesUniversalTime)
+            {
+                var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
+                date = date.Add(offset).ToUniversalTime();
+            }
+
+            return date;
+        }
+
         public void Dispose()
         {
             _httpClient.Dispose();

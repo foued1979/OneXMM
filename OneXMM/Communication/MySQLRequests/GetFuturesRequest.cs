@@ -11,6 +11,7 @@ namespace OneXMM.Communication.MySQLRequests
     {
         public DateTime Asof { get; }
         public Pair Pair { get; }
+        public DateTime LatestInputDate { get; private set; }
 
 
         public GetFuturesRequest(DateTime asof, Pair pair) : base(MySQLTables.futures_ref.ToString())
@@ -25,12 +26,17 @@ namespace OneXMM.Communication.MySQLRequests
 
             while (_reader.Read())
             {
+                // We check the last update
+                // This is used later to check whether Today has been updated
+                var inputDate = _reader.GetDateTime(5);
+                LatestInputDate = inputDate.CompareTo(LatestInputDate) > 0 ? inputDate : LatestInputDate;
+
                 res.Add(new FuturesResult() 
                 { 
                     Id = _reader.GetInt32(0), 
                     Symbol = _reader.GetString(1), 
                     UndlSymbol = _reader.GetString(2), 
-                    Expiry = _reader.GetString(3), 
+                    Expiry = _reader.GetDateTime(3), 
                     Exchange = ExchangeServices.GetExchange(_reader.GetString(4).ToEnum<Exchanges>()) });
             }
 
@@ -39,7 +45,7 @@ namespace OneXMM.Communication.MySQLRequests
 
         public override string ToCmd()
         {
-            return $"SELECT * FROM {TableName} WHERE undl='{Pair.Symbol}' AND inputdate >= '{Asof.ToString(MySQLConnector.DateFormat)}'";
+            return $"SELECT * FROM {TableName} WHERE undl='{Pair.Symbol}' AND expiry >= '{Asof.ToString(MySQLConnector.DateFormat)}'";
         }
     }
 }

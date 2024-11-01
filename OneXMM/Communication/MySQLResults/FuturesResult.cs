@@ -11,7 +11,7 @@ namespace OneXMM.Communication.MySQLResults
         public int Id { get; set; }
         public string Symbol { get; set; }
         public string UndlSymbol { get; set; }
-        public string Expiry { get; set; }
+        public DateTime Expiry { get; set; }
         public Exchange Exchange { get; set; }
 
         public Futures ToFutures(Pair pair)

@@ -19,6 +19,8 @@ namespace OneXMM.Interfaces
 
         DateTime ToExpiry(string expiry);
 
+        DateTime ToExpiry(DateTime expiry);
+
         Option[] LoadOptions(Pair pair);
 
         Futures[] LoadFutures(Pair pair);

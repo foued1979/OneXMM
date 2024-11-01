@@ -57,7 +57,12 @@ namespace Launcher
                 Task.Run(() =>
                 {
                     var timer = _timersToFixingInterval.ElementAt(index);
+#if DEBUG
+                    var d = GetTimerInterval(timer.Value);
+                    timer.Key.Interval = d;
+#else
                     timer.Key.Interval = GetTimerInterval(timer.Value);
+#endif
                     timer.Key.Start();
                 });
             } 
@@ -108,27 +113,27 @@ namespace Launcher
             switch (interval)
             {
                 case FixingIntervals.OneMinute:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 2;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 2000;
                 case FixingIntervals.TwoMinutes:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(0.5 * now.Minute) * 2, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 3;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(0.5 * now.Minute) * 2, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 3000;
                 case FixingIntervals.ThreeMinutes:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(now.Minute / 3.0) * 3, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 3;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(now.Minute / 3.0) * 3, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 3000;
                 case FixingIntervals.FiveMinutes:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(0.2 * now.Minute) * 5, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 5;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(0.2 * now.Minute) * 5, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 5000;
                 case FixingIntervals.TenMinutes:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(0.1 * now.Minute) * 10, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 5;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(0.1 * now.Minute) * 10, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 5000;
                 case FixingIntervals.FifteenMinutes:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(now.Minute / 15.0) * 15, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 5;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(now.Minute / 15.0) * 15, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 5000;
                 case FixingIntervals.TwentyMinutes:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(now.Minute / 15.0) * 15, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 5;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(now.Minute / 15.0) * 15, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 5000;
                 case FixingIntervals.ThirtyMinutes:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(now.Minute / 30.0) * 30, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 5;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, (int)(now.Minute / 30.0) * 30, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 5000;
                 case FixingIntervals.OneHour:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 5;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 5000;
                 case FixingIntervals.TwoHours:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, (int)(0.5 * now.Hour) * 2, 0, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 5;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, (int)(0.5 * now.Hour) * 2, 0, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 5000;
                 case FixingIntervals.FourHours:
-                    return (int)(new DateTime(now.Year, now.Month, now.Day, (int)(0.25 * now.Hour) * 4, 0, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalSeconds - 5;
+                    return (int)(new DateTime(now.Year, now.Month, now.Day, (int)(0.25 * now.Hour) * 4, 0, 0).AddSeconds(attr.TimeInSeconds) - DateTime.Now).TotalMilliseconds - 5000;
             }
 
             throw new NotImplementedException();

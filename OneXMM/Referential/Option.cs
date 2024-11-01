@@ -5,6 +5,7 @@ namespace OneXMM.Referential
     using OneXMM.Communication;
     using OneXMM.Interfaces;
     using OneXMM.Pricing;
+    using OneXMM.Referential.Assets;
 
     public sealed class Option : IComparable<Option>, IMySQLData
     {
@@ -16,26 +17,24 @@ namespace OneXMM.Referential
         public double Strike { get; }
         public DateTime Expiry { get; }
 
-        public Option(IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
-            : this(exchange, pair, optionType, strike, expiry) { Symbol = symbol; Id = Symbol.GetHashCode(); }
+        public Option(IExchange exchange, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
+            : this(exchange, CreateSymbol(pair, optionType, expiry, strike, exchange), pair, optionType, strike, expiry)
+        { }
 
-        public Option(IExchange exchange, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry) 
+        public Option(IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
+            : this(symbol.GetHashCode(), exchange, symbol, pair, optionType, strike, expiry) { }
+
+        public Option(int id, IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
         {
-            Symbol = $"{pair.Symbol}_{optionType}_{expiry.ToString("ddMMMyy")}_{strike}_{exchange.Name}";
-            Id = Symbol.GetHashCode();
+            Id = id;
             Exchange = exchange;
+            Symbol = symbol;
             Pair = pair;
             OptionType = optionType;
             Strike = strike;
 
-            // We adjust the expiry depending on whether Exchange is using UTC time
-            Expiry = exchange.ExchangeUsesUniversalTime
-                ? expiry.Kind == DateTimeKind.Utc
-                    ? expiry
-                    : expiry.ToUniversalTime()
-                : expiry.Kind == DateTimeKind.Utc
-                    ? expiry.ToLocalTime()
-                    : expiry;
+            // The Exchange::ToExpiry includes the UseUniversalTime check
+            Expiry = exchange.ToExpiry(expiry);
         }
 
         public Option(int id, IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, string expiry)
@@ -124,5 +123,7 @@ namespace OneXMM.Referential
         {
             return [Symbol, OptionType.ToString(), Strike.ToString(), Pair.Symbol, Expiry.ToString(MySQLConnector.DateFormat), Exchange.Name];
         }
+
+        private static string CreateSymbol(Pair pair, OptionTypes optionType, DateTime expiry, double strike, IExchange exchange) => $"{pair.Symbol}_{optionType}_{expiry.ToString("ddMMMyy")}_{strike}_{exchange.Name}";
     }
 }

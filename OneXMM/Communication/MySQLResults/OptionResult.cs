@@ -13,7 +13,7 @@ namespace OneXMM.Communication.MySQLResults
         public OptionTypes OptionType { get; set; }
         public double Strike { get; set; }
         public string UndlSymbol { get; set; }
-        public string Expiry { get; set; }
+        public DateTime Expiry { get; set; }
         public Exchange Exchange { get; set; }
 
         public Option ToOption(Pair pair)

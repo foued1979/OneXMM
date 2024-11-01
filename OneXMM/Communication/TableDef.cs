@@ -15,7 +15,7 @@ namespace OneXMM.Communication
             new TableField("id", "int not null auto_increment"),
             new TableField("symbol", "varchar(40) not null"),
             new TableField("undl", "varchar(20) not null"),
-            new TableField("expiry", "varchar(10) not null"),
+            new TableField("expiry", "datetime not null"),
             new TableField("exchange", "varchar(20) not null"),
             new TableField("inputdate", "datetime not null")
             ];
@@ -26,7 +26,7 @@ namespace OneXMM.Communication
             new TableField("optiontype", "varchar(4) not null"),
             new TableField("strike", "double not null"),
             new TableField("undl", "varchar(20) not null"),
-            new TableField("expiry", "varchar(10) not null"),
+            new TableField("expiry", "datetime not null"),
             new TableField("exchange", "varchar(20) not null"),
             new TableField("inputdate", "datetime not null")
             ];

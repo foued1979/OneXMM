@@ -45,7 +45,7 @@ namespace OneXMM.Referential
                 var futuresResult = _sqlConnector.Get(getFuturesRequest);
                 Futures[]? futures = null;
 
-                if (futuresResult.Count() == 0)
+                if (futuresResult.Count() == 0 || getFuturesRequest.LatestInputDate.CompareTo(today) < 0)
                 {
                     futures = exchange.LoadFutures(pair);
                     string[][] dataToInsert = new string[futures.Length][];
@@ -68,7 +68,7 @@ namespace OneXMM.Referential
                 var optionsResult = _sqlConnector.Get(getOptionRequest);
                 Option[]? options = null;
 
-                if (optionsResult.Count() == 0)
+                if (optionsResult.Count() == 0 || getOptionRequest.LatestInputDate.CompareTo(today) < 0)
                 {
                     options = exchange.LoadOptions(pair);
                     string[][] dataToInsert = new string[options.Length][];

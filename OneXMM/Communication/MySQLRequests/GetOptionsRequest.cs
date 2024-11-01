@@ -10,8 +10,9 @@ namespace OneXMM.Communication.MySQLRequests
 
     internal sealed class GetOptionsRequest : MySQLRequest<OptionResult>
     {
-        public DateTime Asof { get; set; }
-        public Pair Pair { get; set; }
+        public DateTime Asof { get; }
+        public Pair Pair { get; }
+        public DateTime LatestInputDate { get; private set; }
 
         public GetOptionsRequest(DateTime asof, Pair pair) : base(MySQLTables.options_ref.ToString())
         {
@@ -25,6 +26,11 @@ namespace OneXMM.Communication.MySQLRequests
 
             while (_reader.Read())
             {
+                // We check the last update
+                // This is used later to check whether Today has been updated
+                var inputDate = _reader.GetDateTime(5);
+                LatestInputDate = inputDate.CompareTo(LatestInputDate) > 0 ? inputDate : LatestInputDate;
+
                 res.Add(new OptionResult()
                 {
                     Id = _reader.GetInt32(0),
@@ -32,7 +38,7 @@ namespace OneXMM.Communication.MySQLRequests
                     OptionType = _reader.GetString(2).ToEnum<OptionTypes>(),
                     Strike = _reader.GetDouble(3),
                     UndlSymbol = _reader.GetString(4),
-                    Expiry = _reader.GetString(5),
+                    Expiry = _reader.GetDateTime(5),
                     Exchange = ExchangeServices.GetExchange(_reader.GetString(6).ToEnum<Exchanges>())
                 });
             }
@@ -42,7 +48,7 @@ namespace OneXMM.Communication.MySQLRequests
 
         public override string ToCmd()
         {
-            return $"SELECT * FROM {TableName} WHERE undl='{Pair.Symbol}' AND inputdate >= '{Asof.ToString(MySQLConnector.DateFormat)}'";
+            return $"SELECT * FROM {TableName} WHERE undl='{Pair.Symbol}' AND expiry >= '{Asof.ToString(MySQLConnector.DateFormat)}'";
         }
     }
 }
