@@ -171,7 +171,7 @@ namespace OneXMM.Utils
         /// We add 1D to the 1W fixing interval so that, when 10 minutes ellapses, we know
         /// that we have to update 1W and 1D.
         /// </summary>
-        public static void AdjustMatuByFixingInterval(Dictionary<FixingIntervals, string[]> matuByFixingInterval)
+        public static void AdjustMatuByFixingInterval(Dictionary<FixingIntervals, PoolMaturities[]> matuByFixingInterval)
         {
             foreach (FixingIntervals fixingInterval in Enum.GetValues(typeof(FixingIntervals)))
             {

@@ -35,6 +35,16 @@
       "Address": ""
     }
   ],
+  "TokenAddresses": {
+    "Test": {
+      "Ethereum": "",
+      "Hardhat": "0x5fbdb2315678afecb367f032d93f642f64180aa3"
+    },
+    "Live": {
+      "Ethereum": "",
+      "Hardhat": ""
+    }
+  }
   "PairDefs": [
     {
       "CoinId": 0,
@@ -44,15 +54,21 @@
         "NonKYC": [
           {
             "Term": "1D",
-            "FixingInterval": "FiveMinutes"
+            "FixingInterval": "FiveMinutes",
+            "TestAddress": "",
+            "LiveAddress": ""
           },
           {
             "Term": "1W",
-            "FixingInterval": "TenMinutes"
+            "FixingInterval": "TenMinutes",
+            "TestAddress": "",
+            "LiveAddress": ""
           },
           {
             "Term": "2W",
-            "FixingInterval": "FifteenMinutes"
+            "FixingInterval": "FifteenMinutes",
+            "TestAddress": "",
+            "LiveAddress": ""
           }
         ],
         "KYC": []
@@ -67,15 +83,21 @@
         "NonKYC": [
           {
             "Term": "1D",
-            "FixingInterval": "FiveMinutes"
+            "FixingInterval": "FiveMinutes",
+            "TestAddress": "",
+            "LiveAddress": ""
           },
           {
             "Term": "1W",
-            "FixingInterval": "TenMinutes"
+            "FixingInterval": "TenMinutes",
+            "TestAddress": "",
+            "LiveAddress": ""
           },
           {
             "Term": "2W",
-            "FixingInterval": "FifteenMinutes"
+            "FixingInterval": "FifteenMinutes",
+            "TestAddress": "",
+            "LiveAddress": ""
           }
         ],
         "KYC": []

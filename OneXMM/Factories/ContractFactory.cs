@@ -1,22 +1,23 @@
 ﻿using System;
 using System.Reflection;
+using Nethereum.ABI.Model;
+using Nethereum.Contracts;
+using Nethereum.Web3;
 
 namespace OneXMM.Factories
 {
-    using Nethereum.ABI.Model;
-    using Nethereum.Contracts;
-    using Nethereum.Web3;
     using OneXMM.Attributes;
     using OneXMM.Communication;
     using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;
     using OneXMM.Resources.RawHardhatArtifact;
     using OneXMM.Utils;
-    using Org.BouncyCastle.Cms;
+    using System.Collections.Generic;
 
     public static class ContractFactory
     {
         private static Dictionary<Blockchains, Contract> _tokenContracts = new Dictionary<Blockchains, Contract>();
+        private static SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<PoolMaturities, Contract>>> _poolContracts = new SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<PoolMaturities, Contract>>>();
 
         public static void SetContractFactory(bool isTestMode)
         {
@@ -37,21 +38,30 @@ namespace OneXMM.Factories
 
             if (attr.BlockchainType == BlockchainTypes.EthereumLike)
             {
-                return new EthereumLikeRequestManager<TokenFunctions>(new EthereumAccount((int)blockchain), GetContract<TokenFunctions>(blockchain));
+                return new EthereumLikeRequestManager<TokenFunctions>(new EthereumAccount((int)blockchain), _tokenContracts[blockchain]);
             }
 
             throw new NotImplementedException();
         }
 
-        public static IRequestManager<PoolFunctions> CreatePoolRequestManager(Pair pair, KycStatus kycStatus)
+        public static Dictionary<PoolMaturities, IRequestManager<PoolFunctions>> CreatePoolRequestManager(Pair pair, KycStatus kycStatus)
         {
             var blockchain = pair.Chain;
-
             var attr = blockchain.GetAttributeForEnum<Blockchains, BlockchainDetailsAttribute>()!;
 
             if (attr.BlockchainType == BlockchainTypes.EthereumLike)
             {
-                return new EthereumLikeRequestManager<PoolFunctions>(new EthereumAccount((int)blockchain), GetContract<PoolFunctions>(pair, kycStatus));
+                var res = new Dictionary<PoolMaturities, IRequestManager<PoolFunctions>>(Enum.GetValues<PoolMaturities>().Length);
+
+                var contracts = _poolContracts[pair][kycStatus];
+                
+                foreach (var contract in contracts)
+                {
+                    var manager = new EthereumLikeRequestManager<PoolFunctions>(new EthereumAccount((int)blockchain), contract.Value);
+                    res.Add(contract.Key, manager);
+                }
+                
+                return res;
             }
 
             throw new NotImplementedException();
@@ -75,14 +85,14 @@ namespace OneXMM.Factories
                         {
                             var abi = streamReader.ReadToEnd();
                             var hardhatArtifact = Utils.ConvertJsonToObject<HardhatArtifact>(abi);
-                            if (hardhatArtifact is null) continue;
+                            if (hardhatArtifact is null) throw new Exception($"ContractFactory - Cannot read artifact {embeddedResource}.");
 
                             switch (blockchain)
                             {
                                 case Blockchains.Ethereum:
                                 case Blockchains.HardHat:
                                     var contract = GetEthereumContract(blockchain, hardhatArtifact.ToString(), contractAddress, isTestMode);
-                                    if (contract is null) throw new Exception($"ContractFactory - Contrac is null for blockchain {blockchain.ToString()} and address {contractAddress}.");
+                                    if (contract is null) throw new Exception($"ContractFactory - Token contract is null for blockchain {blockchain.ToString()} and address {contractAddress}.");
                                     _tokenContracts.Add(blockchain, contract);
                                     break;
                                 default:
@@ -93,20 +103,47 @@ namespace OneXMM.Factories
                     }
                     else if (embeddedResource.Contains("Pool"))
                     {
-                        throw new NotImplementedException();
+                        var allPairs = Config.GetPairs();
+
+                        foreach (var pair in allPairs) 
+                        {
+                            var contractAddressesForPair = Config.GetPoolContractAddresses(pair, isTestMode);
+                            Dictionary<KycStatus, Dictionary<PoolMaturities, Contract>>? contractsByKycStatus = new Dictionary<KycStatus, Dictionary<PoolMaturities, Contract>>(Config.nKycStatus);
+
+                            using (var stream = assembly.GetManifestResourceStream(embeddedResource))
+                            using (var streamReader = new StreamReader(stream))
+                            {
+                                var abi = streamReader.ReadToEnd();
+                                var hardhatArtifact = Utils.ConvertJsonToObject<HardhatArtifact>(abi);
+                                if (hardhatArtifact is null) throw new Exception($"ContractFactory - Cannot read artifact {embeddedResource}.");
+
+                                switch (blockchain)
+                                {
+                                    case Blockchains.Ethereum:
+                                    case Blockchains.HardHat:
+                                        foreach (var contractAddressesByKycStatus in contractAddressesForPair)
+                                        {
+                                            var contractsByMatu = new Dictionary<PoolMaturities, Contract>(Enum.GetValues<PoolMaturities>().Length);
+
+                                            foreach (var matu in contractAddressesByKycStatus.Value)
+                                            {
+                                                var contract = GetEthereumContract(blockchain, hardhatArtifact.ToString(), matu.Value, isTestMode);
+                                                if (contract is null) throw new Exception($"ContractFactory - Pool contract is null for blockchain {blockchain.ToString()} and address {matu.Value}.");
+
+                                                contractsByMatu.Add(matu.Key, contract);
+                                            }
+
+                                            contractsByKycStatus.Add(contractAddressesByKycStatus.Key, contractsByMatu);
+                                        }
+                                        break;
+                                    default:
+                                        throw new NotImplementedException($"GetSmartContracts - Unknown blockchain {blockchain}.");
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
-
-        private static Contract GetContract<FType>(Blockchains blockchain) where FType : Enum
-        {
-            if (typeof(FType).Equals(typeof(TokenFunctions)))
-            {
-                return _tokenContracts[blockchain];
-            }
-
-            throw new NotImplementedException();
         }
 
         private static Contract? GetEthereumContract(Blockchains blockchain, string abi, string contractAddress, bool isTestMode)

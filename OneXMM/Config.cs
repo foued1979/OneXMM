@@ -7,21 +7,23 @@ namespace OneXMM
     using OneXMM.Configuration;
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
+    using System.Collections.Generic;
     using System.Runtime.CompilerServices;
     using static OneXMM.Utils.Utils;
 
     public static class Config
     {
         internal const bool IsTestMode = true;
+        internal static readonly int nKycStatus = Enum.GetValues<KycStatus>().Length;
 
         // The private fields
         private static ExchangeSettings _settings;
 
         // The internal fields
-        internal readonly static Configuration.ContractsReferential _contractsReferential;
         internal readonly static Configuration.Referential _referential;
         internal readonly static SymbolMapping _symbolMapping;
-        internal readonly static SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<FixingIntervals, string[]>>> _poolUpdateCfg = new SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<FixingIntervals, string[]>>>();
+        internal readonly static SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<FixingIntervals, PoolMaturities[]>>> _poolUpdateCfg = new SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<FixingIntervals, PoolMaturities[]>>>();
+        internal readonly static SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<PoolMaturities, string>>> _poolContractAddresses = new SortedDictionary<Pair, Dictionary<KycStatus, Dictionary<PoolMaturities, string>>>();
 
         #region Public Properties
 
@@ -36,36 +38,63 @@ namespace OneXMM
 
             _settings = SetSettings();
             _symbolMapping = SetSymbolMapping();
-            _contractsReferential = SetContractsRef();
-            _referential = SetRefData();
+            _referential = SetReferential();
             
             foreach (var pairDef in _referential.PairDefs)
             {
                 var pair = GetPair(pairDef.CoinId, pairDef.BaseId);
-                Dictionary<FixingIntervals, string[]>? matuByFixingInterval = null;
+                Dictionary<KycStatus, Dictionary<FixingIntervals, PoolMaturities[]>>? matuByKycStatus = null;
+                Dictionary<KycStatus, Dictionary<PoolMaturities, string>>? addressesByKycStatus = null;
 
-                if (!_poolUpdateCfg.TryGetValue(pair, out matuByFixingInterval))
+                if (!_poolUpdateCfg.TryGetValue(pair, out matuByKycStatus))
                 {
-                    matuByFixingInterval = new Dictionary<FixingIntervals, string[]>();
-                    _poolUpdateCfg.Add(pair, matuByFixingInterval);
+                    matuByKycStatus = new Dictionary<KycStatus, Dictionary<FixingIntervals, PoolMaturities[]>>(nKycStatus);
+                    _poolUpdateCfg.Add(pair, matuByKycStatus);
+                } 
+                
+                if (!_poolContractAddresses.TryGetValue(pair, out addressesByKycStatus))
+                {
+                    addressesByKycStatus = new Dictionary<KycStatus, Dictionary<PoolMaturities, string>>(nKycStatus);
+                    _poolContractAddresses.Add(pair, addressesByKycStatus);
                 }
 
                 foreach (var poolSettings in pairDef.PoolSettings)
                 {
-                    string[]? listOfMatu = null;
+                    Dictionary<FixingIntervals, PoolMaturities[]>? matuByFixingInterval = null;
+                    Dictionary<PoolMaturities, string>? addressByMatu = null;
 
-                    if (!matuByFixingInterval.TryGetValue(poolSettings.FixingInterval, out listOfMatu))
+                    if (!matuByKycStatus.TryGetValue(poolSettings.Key, out matuByFixingInterval))
                     {
-                        listOfMatu = [poolSettings.Term];
-                        matuByFixingInterval.Add(poolSettings.FixingInterval, listOfMatu);
+                        matuByFixingInterval = new Dictionary<FixingIntervals, PoolMaturities[]>(Enum.GetValues<FixingIntervals>().Length);
+                        matuByKycStatus.Add(poolSettings.Key, matuByFixingInterval);
                     }
-                    else
+
+                    if (!addressesByKycStatus.TryGetValue(poolSettings.Key, out addressByMatu))
                     {
-                        listOfMatu = listOfMatu.Append(poolSettings.Term).ToArray();
+                        addressByMatu = new Dictionary<PoolMaturities, string>(Enum.GetValues<PoolMaturities>().Length);
+                        addressesByKycStatus.Add(poolSettings.Key, addressByMatu);
                     }
+
+                    foreach (var poolSetting in poolSettings.Value)
+                    {
+                        PoolMaturities[]? listOfMatu = null;
+                        var poolMatu = poolSetting.TermValue.ToPoolMaturity();
+
+                        if (!matuByFixingInterval.TryGetValue(poolSetting.FixingInterval, out listOfMatu))
+                        {
+                            listOfMatu = [poolMatu];
+                            matuByFixingInterval.Add(poolSetting.FixingInterval, listOfMatu);
+                        }
+                        else
+                        {
+                            listOfMatu = listOfMatu.Append(poolMatu).ToArray();
+                        }
+
+                        addressByMatu.Add(poolMatu, IsTestMode ? poolSetting.TestAddress : poolSetting.LiveAddress);
+                    }
+
+                    Tools.AdjustMatuByFixingInterval(matuByFixingInterval);
                 }
-
-                Tools.AdjustMatuByFixingInterval(matuByFixingInterval);
             }
         }
 
@@ -80,30 +109,67 @@ namespace OneXMM
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetTokenContractAddress(Blockchains blockchain, bool isTestMode)
         {
-            if (isTestMode) return _contractsReferential.Test.OneXMM[blockchain];
-            else return _contractsReferential.Live.OneXMM[blockchain];
+            if (isTestMode) return _referential.TokenAddresses.Test[blockchain];
+            else return _referential.TokenAddresses.Live[blockchain];
+        }
+
+        public static Dictionary<KycStatus, Dictionary<PoolMaturities, string>> GetPoolContractAddresses(Pair pair, bool isTestMode)
+        {
+            var res = new Dictionary<KycStatus, Dictionary<PoolMaturities, string>>(nKycStatus);
+
+            if (_poolContractAddresses.TryGetValue(pair, out var addressesByKycStatus)) return addressesByKycStatus;
+
+            throw new Exception($"Config - No pool settings for pair {pair.Symbol} on chain {pair.Chain}.");
         }
 
         /// <summary>
         /// Gets the sorted pool maturities for a Pair.
         /// </summary>
         /// <param name="pair">The <see cref="Pair"/>.</param>
-        public static PoolMaturities[] GetPoolMaturities(Pair pair)
+        public static Dictionary<KycStatus, PoolMaturities[]> GetPoolMaturities(Pair pair)
         {
+            var res = new Dictionary<KycStatus, PoolMaturities[]>(nKycStatus);
+
+            foreach (var fixingIntervalDetailsByKycStatus in _poolUpdateCfg[pair])
+            {
+                var maturities = new List<PoolMaturities>(Enum.GetValues<PoolMaturities>().Length);
+
+                foreach (var matuForKycStatus in fixingIntervalDetailsByKycStatus.Value)
+                {
+                    foreach (var matu in matuForKycStatus.Value)
+                    {
+                        if (maturities.Contains(matu)) continue;
+                        maturities.Add(matu);
+                    }
+                }
+
+                maturities.Sort(new PoolMaturityComparer());
+                res.Add(fixingIntervalDetailsByKycStatus.Key, maturities.ToArray());
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Gets the sorted pool maturities for a Pair and KycStatus.
+        /// </summary>
+        /// <param name="pair">The <see cref="Pair"/>.</param>
+        /// <param name="kycStatus">The <see cref="KycStatus"/>.</param>
+        public static PoolMaturities[] GetPoolMaturities(Pair pair, KycStatus kycStatus)
+        {
+            if (!_poolUpdateCfg[pair].ContainsKey(kycStatus)) return [];
             var maturities = new List<PoolMaturities>(Enum.GetValues<PoolMaturities>().Length);
 
-            foreach (var fixingIntervalDetails in _poolUpdateCfg[pair])
+            foreach (var fixingIntervalDetailsForKycStatus in _poolUpdateCfg[pair][kycStatus])
             {
-                foreach (var matuStr in fixingIntervalDetails.Value)
+                foreach (var matu in fixingIntervalDetailsForKycStatus.Value)
                 {
-                    var matu = matuStr.ToPoolMaturity();
-
                     if (maturities.Contains(matu)) continue;
                     maturities.Add(matu);
                 }
-            }
 
-            maturities.Sort(new PoolMaturityComparer());
+                maturities.Sort(new PoolMaturityComparer());
+            }
 
             return maturities.ToArray();
         }
@@ -111,20 +177,54 @@ namespace OneXMM
         /// <summary>
         /// Returns the fixing intervals which are used for a pair.
         /// </summary>
-        public static Tools.IntervalSelection GetFixingIntervalsForPair(Pair pair)
+        public static Dictionary<KycStatus, Tools.IntervalSelection> GetFixingIntervalsForPair(Pair pair)
         {
-            var pairDef = _referential.GetPairDef(pair);
-            var fixingIntervals = pairDef.PoolSettings.Select(ps =>  ps.FixingInterval).ToArray();
+            var res = new Dictionary<KycStatus, Tools.IntervalSelection>(nKycStatus);
 
+            foreach (var kycStatus in _poolUpdateCfg[pair])
+            {
+                res.Add(kycStatus.Key, GetFixingIntervalsForPair(pair, kycStatus.Key));
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Returns the fixing intervals which are used for a pair and KycStatus.
+        /// </summary>
+        public static Tools.IntervalSelection GetFixingIntervalsForPair(Pair pair, KycStatus kycStatus)
+        {
+            var fixingIntervals = _poolUpdateCfg[pair][kycStatus].Keys.ToArray();
             return Tools.SplitIntervals(fixingIntervals);
         }
         
         /// <summary>
         /// Returns all the terms which have to be updated for a given fixing interval, for a given pair.
         /// </summary>
-        public static string[] GetTermsToUpdate(FixingIntervals updateTempo, Pair pair)
+        public static Dictionary<KycStatus, PoolMaturities[]> GetTermsToUpdate(FixingIntervals updateTempo, Pair pair)
         {
-            if (_poolUpdateCfg.TryGetValue(pair, out var termsByFixingInterval) && termsByFixingInterval.TryGetValue(updateTempo, out var terms)) return terms;
+            var res = new Dictionary<KycStatus, PoolMaturities[]>(nKycStatus);
+
+            if (_poolUpdateCfg.TryGetValue(pair, out var termsByKycStatus)) 
+            {
+                foreach (var kycStatus in termsByKycStatus)
+                {
+                    res.Add(kycStatus.Key, GetTermsToUpdate(updateTempo, pair, kycStatus.Key));
+                }
+
+                return res;
+            }
+            throw new Exception("Config - Error getting Terms to update.");
+        }
+
+        /// <summary>
+        /// Returns all the terms which have to be updated for a given fixing interval, for a given pair and KycStatus
+        /// </summary>
+        public static PoolMaturities[] GetTermsToUpdate(FixingIntervals updateTempo, Pair pair, KycStatus kycStatus)
+        {
+            if (_poolUpdateCfg.TryGetValue(pair, out var termsByKycStatus)
+                && termsByKycStatus.TryGetValue(kycStatus, out var termsByFixingInterval)
+                && termsByFixingInterval.TryGetValue(updateTempo, out var maturities)) return maturities;
             throw new Exception("Config - Error getting Terms to update.");
         }
 
@@ -197,19 +297,11 @@ namespace OneXMM
             return Utils.Utils.ConvertFileToObject<ExchangeSettings>(Path.Combine(appPath, "Configuration\\ExchangeSettings.json")) ?? throw new Exception("Config - Issue reading ExchangeSettings.");
         }
 
-        private static Configuration.Referential SetRefData()
+        private static Configuration.Referential SetReferential()
         {
             using (var r = typeof(Config).Assembly.GetManifestResourceStream("OneXMM.Configuration.Referential.json"))
             {
                 return Utils.Utils.ConvertJsonToObject<Configuration.Referential>(r) ?? throw new Exception("Config - Issue reading Referential.");
-            }
-        }
-
-        private static Configuration.ContractsReferential SetContractsRef()
-        {
-            using (var r = typeof(Config).Assembly.GetManifestResourceStream("OneXMM.Configuration.ContractsReferential.json"))
-            {
-                return Utils.Utils.ConvertJsonToObject<Configuration.ContractsReferential>(r) ?? throw new Exception("Config - Issue reading ContractsReferential.");
             }
         }
 
