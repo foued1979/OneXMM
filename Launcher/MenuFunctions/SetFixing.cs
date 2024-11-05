@@ -1,17 +1,21 @@
-﻿using OneXMM;
-using OneXMM.Utils;
-using System;
+﻿using System;
 
 namespace Launcher.MenuFunctions
 {
+    using OneXMM;
+    using OneXMM.Referential.Assets;
+
     internal static class SetFixing
     {
+        internal static Pair[] _selectedPairs;
+
         public static void LaunchFixingMenu()
         {
             Console.Clear();
             Console.WriteLine("Set pairs for fixing process");
             Console.WriteLine("----------------------------");
             Console.WriteLine("Select the pairs (use ; as pair seperator):");
+            Console.WriteLine("999. Add pre-set list");
 
             var count = 1;
             var pairs = Config.GetPairs();
@@ -49,11 +53,23 @@ namespace Launcher.MenuFunctions
             cmd = cmd.TrimEnd(';');
             var pairIds = cmd.Split(';');
 
+            var selectedPairs = new List<Pair>(20);
+
             foreach (var pairId in pairIds)
             {
-                var pair = pairs[Convert.ToUInt32(pairId) - 1];
-                Tempos.AddPairToTempos(pair, Config.GetFixingIntervalsForPair(pair).Merge());
+                if (pairId.Equals("999"))
+                {
+                    throw new NotImplementedException("Need to read pairs from DefaultPairs.json");
+                }
+                else
+                {
+                    selectedPairs.Add(pairs[Convert.ToUInt32(pairId) - 1]);
+                }
             }
+
+            _selectedPairs = selectedPairs.ToArray();
+
+            KycChoice.LaunchKycChoiceMenu();
         }
     }
 }

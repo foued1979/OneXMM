@@ -1,0 +1,9 @@
+﻿{
+	"Pairs": [
+		{
+			"Symbol": "BTC/USD",
+			"Chain": "Ethereum",
+			"Kyc": "Both"
+		}
+	]
+}
