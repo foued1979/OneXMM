@@ -4,7 +4,7 @@ namespace Launcher.Configuration
 {
     using OneXMM;
 
-    internal struct DefaultPairs
+    internal sealed class DefaultPairs
     {
         public PairSetting[] Pairs { get; set; }
     }

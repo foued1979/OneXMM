@@ -22,7 +22,7 @@ namespace OneXMM.Referential.Exchanges.Responses
             return new Option(optionDef.instrument_id,
                 exchange,
                 optionDef.instrument_name,
-                Config.GetPair(optionDef.base_currency, optionDef.counter_currency, chain) ?? throw new Exception($"Unknown pair {optionDef.base_currency}/{optionDef.counter_currency} for option on {exchange.Name}."),
+                Config.GetPair(optionDef.base_currency, optionDef.counter_currency, chain, false)!,
                 optionDef.option_type.ToLower().Equals("call") ? OptionTypes.Call : OptionTypes.Put,
                 optionDef.strike,
                 (exchange as Deribit)!.OptionNameToExpiry(optionDef.instrument_name));
@@ -34,7 +34,7 @@ namespace OneXMM.Referential.Exchanges.Responses
             return new Futures(futDef.instrument_id,
                 exchange,
                 futDef.instrument_name,
-                Config.GetPair(futDef.base_currency, futDef.counter_currency, chain) ?? throw new Exception($"Unknown pair {futDef.base_currency}/{futDef.counter_currency} for Futures on {exchange.Name}."),
+                Config.GetPair(futDef.base_currency, futDef.counter_currency, chain, false)!,
                 (exchange as Deribit)!.FutureNameToExpiry(futDef.instrument_name));
         }
     }

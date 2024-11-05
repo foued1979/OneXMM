@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Launcher
+namespace OneXMM
 {
-    internal enum KycChoices
+    public enum KycChoices
     {
         Both = 0,
         NonKyc,

@@ -3,7 +3,6 @@
 namespace Launcher.MenuFunctions
 {
     using OneXMM;
-    using OneXMM.Referential.Assets;
     using OneXMM.Utils;
 
     internal static class KycChoice
@@ -40,11 +39,21 @@ namespace Launcher.MenuFunctions
                 }
             } while (key.Key != ConsoleKey.Enter);
 
-            var selectedPairs = new List<Pair>();
+            var kycChoice = cmd == '1'
+                ? KycChoices.Both
+                : cmd == '2'
+                    ? KycChoices.NonKyc
+                    : KycChoices.Kyc;
 
-            throw new NotImplementedException("Need to select tempos based on Kyc and Non-Kyc");
+            var refPairsForKycChoice = Config.GetPairs(kycChoice);
+            var selectedPairs = SetFixing._selectedPairs.Intersect(refPairsForKycChoice);
 
-            foreach (var pair in selectedPairs) Tempos.AddPairToTempos(pair, Config.GetFixingIntervalsForPair(pair).Merge());
+            foreach (var pair in selectedPairs)
+            {
+                if (kycChoice == KycChoices.Both) Tempos.AddPairToTempos(pair, Config.GetFixingIntervalsForPair(pair).Merge());
+                else if (kycChoice == KycChoices.NonKyc) Tempos.AddPairToTempos(pair, Config.GetFixingIntervalsForPair(pair, KycStatus.NonKYC));
+                else Tempos.AddPairToTempos(pair, Config.GetFixingIntervalsForPair(pair, KycStatus.KYC));
+            }
         }
     }
 }

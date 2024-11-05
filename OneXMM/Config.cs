@@ -42,7 +42,7 @@ namespace OneXMM
             
             foreach (var pairDef in _referential.PairDefs)
             {
-                var pair = GetPair(pairDef.CoinId, pairDef.BaseId);
+                var pair = GetPair(pairDef.CoinId, pairDef.BaseId, true);
                 Dictionary<KycStatus, Dictionary<FixingIntervals, PoolMaturities[]>>? matuByKycStatus = null;
                 Dictionary<KycStatus, Dictionary<PoolMaturities, string>>? addressesByKycStatus = null;
 
@@ -237,58 +237,71 @@ namespace OneXMM
             throw new Exception($"Cannot find {symbolType} for Pair {pair.Symbol} on exchange {exchange}.");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Pair[] GetPairs()
         {
-            return _referential.PairDefs.Select(pd =>
-            {
-                var coin = _referential.Coins.First(c => c.Id == pd.CoinId);
-                var counter = _referential.Coins.First(c => c.Id == pd.BaseId);
-                if (!_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}/{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.InternalSymbol}/{counter.InternalSymbol}.");
-
-                return new Pair(coin, counter, pd.CorrelatedVol, exchangeSymbols);
-            }).ToArray();
+            return _poolUpdateCfg.Keys.ToArray();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Pair[] GetPairs(KycChoices kycChoice)
+        {
+            if (kycChoice == KycChoices.Both) return _poolUpdateCfg.Keys.ToArray();
+            return _poolUpdateCfg.Keys.Where(k => _poolUpdateCfg[k][kycChoice == KycChoices.NonKyc ? KycStatus.NonKYC : KycStatus.KYC].Count() != 0)?.ToArray() ?? [];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Pair[] GetPairs(string pairSymbol)
         {
-            return _referential.PairDefs
-                .Select(pd =>
-                {
-                var coin = _referential.Coins.First(c => c.Id == pd.CoinId);
-                var counter = _referential.Coins.First(c => c.Id == pd.BaseId);
+            return _poolUpdateCfg.Keys.Where(p => p.Symbol.Equals(pairSymbol))?.ToArray()
+                ?? throw new Exception($"Config - No pair with symbol {pairSymbol}.");
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Pair GetPair(string pairSymbol, Blockchains chain)
+        {
+            return _poolUpdateCfg.Keys.First(p => p.Symbol.Equals(pairSymbol) && p.Chain == chain)
+                ?? throw new Exception($"Config - No pair with symbol {pairSymbol}.");
+        }
+
+        public static Pair GetPair(int coinId, int baseId, bool createPair)
+        {
+            if (createPair)
+            {
+                var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coinId && pd.BaseId == baseId);
+                var coin = _referential.Coins.First(c => c.Id == coinId);
+                var counter = _referential.Coins.First(c => c.Id == baseId);
                 if (!_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.InternalSymbol}/{counter.InternalSymbol}.");
 
-                return new Pair(coin, counter, pd.CorrelatedVol, exchangeSymbols);
-                })
-                .Where(p => p.Symbol.Equals(pairSymbol))
-                .ToArray();
+                return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
+            }
+
+            return _poolUpdateCfg.Keys.Where(p => p.Coin.Id == coinId && p.Base.Id == baseId)?.First()
+                ?? throw new Exception($"Config - No pair for coin Id {coinId} and base Id {baseId}.");
         }
 
-        public static Pair GetPair(int coinId, int baseId)
+        public static Pair GetPair(string coinSymbol, string counterSymbol, Blockchains chain, bool createPair)
         {
-            var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coinId && pd.BaseId == baseId);
-            var coin = _referential.Coins.First(c => c.Id == coinId);
-            var counter = _referential.Coins.First(c => c.Id == baseId);
-            if (!_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.InternalSymbol}/{counter.InternalSymbol}.");
+            if (createPair)
+            {
+                var coin = _referential.Coins.FirstOrDefault(c => c.InternalSymbol.Equals(coinSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
+                var counter = _referential.Coins.FirstOrDefault(c => c.InternalSymbol.Equals(counterSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
 
-            return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
-        }
+                var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coin.Id && pd.BaseId == counter.Id);
 
-        public static Pair GetPair(string coinSymbol, string counterSymbol, Blockchains chain)
-        {
-            var coin = _referential.Coins.FirstOrDefault(c => c.InternalSymbol.Equals(coinSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
-            var counter = _referential.Coins.FirstOrDefault(c => c.InternalSymbol.Equals(counterSymbol, StringComparison.OrdinalIgnoreCase) && (c.IsFiat || c.Chain == chain));
+                if (coin is null || counter is null || !_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coinSymbol}/{counterSymbol}.");
+                return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
+            }
 
-            var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coin.Id && pd.BaseId == counter.Id);
-
-            if (coin is null || counter is null || !_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coinSymbol}/{counterSymbol}.");
-            return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
+            return _poolUpdateCfg.Keys.Where(p => p.Coin.InternalSymbol.Equals(coinSymbol, StringComparison.OrdinalIgnoreCase)
+                && p.Base.InternalSymbol.Equals(counterSymbol, StringComparison.OrdinalIgnoreCase)
+                && p.Chain == chain)?.First() ?? throw new Exception($"Config - No pair for coin {coinSymbol} and base {counterSymbol}, on chain {chain}.");
         }
 
         public static Pair GetPair(Coin coin, Coin counter)
         {
             if (coin.Chain != counter.Chain) return null;
-            return GetPair(coin.Id, counter.Id);
+            return GetPair(coin.Id, counter.Id, false);
         }
 
         private static ExchangeSettings SetSettings()

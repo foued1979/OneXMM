@@ -7,6 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OneXMM", "OneXMM\OneXMM.csp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configuration", "Configuration", "{BF3D51BD-F073-4258-ADAD-D3A235F0C9ED}"
 	ProjectSection(SolutionItems) = preProject
+		Launcher\Configuration\DefaultPairs.json = Launcher\Configuration\DefaultPairs.json
 		OneXMM\Configuration\ExchangeSettings.json = OneXMM\Configuration\ExchangeSettings.json
 		OneXMM\Configuration\MySQLSettings.txt = OneXMM\Configuration\MySQLSettings.txt
 		OneXMM\Configuration\NodeSettings.txt = OneXMM\Configuration\NodeSettings.txt
@@ -16,7 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configuration", "Configurat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Launcher", "Launcher\Launcher.csproj", "{6AC6BDB6-EEC5-417C-95B2-497460E7E428}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XMMUI", "XMMUI\XMMUI.csproj", "{C8A947B5-B015-4558-A386-6FE0C57F3AD9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XMMUI", "XMMUI\XMMUI.csproj", "{C8A947B5-B015-4558-A386-6FE0C57F3AD9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

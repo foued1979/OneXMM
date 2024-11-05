@@ -2,8 +2,10 @@
 
 namespace Launcher.MenuFunctions
 {
+    using Launcher.Configuration;
     using OneXMM;
     using OneXMM.Referential.Assets;
+    using OneXMM.Utils;
 
     internal static class SetFixing
     {
@@ -59,7 +61,24 @@ namespace Launcher.MenuFunctions
             {
                 if (pairId.Equals("999"))
                 {
-                    throw new NotImplementedException("Need to read pairs from DefaultPairs.json");
+                    var filePath = Path.Combine(AppContext.BaseDirectory, "Configuration\\DefaultPairs.json");
+                    var preset = Utils.ConvertFileToObject<DefaultPairs>(filePath) ?? throw new Exception("SetFixing - Cannot read DefaultPairs.json.");
+                    var listOfPresetPairs = new List<Pair>(preset.Pairs.Length);
+
+                    foreach (var pairSetting in preset.Pairs)
+                    {
+                        listOfPresetPairs.Add(Config.GetPair(pairSetting.Symbol, pairSetting.Chain));
+                        throw
+                    }
+
+                    if (pairIds.Length == 1)
+                    {
+                        
+                    }
+                    else
+                    {
+
+                    }
                 }
                 else
                 {

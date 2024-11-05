@@ -4,7 +4,7 @@ namespace OneXMM.Interfaces
 {
     using OneXMM.Referential.Assets;
 
-    public interface IVolatilitySurface
+    public interface IVolatilitySurface : IMySQLData
     {
         DateTime SurfaceDate { get; }
         Pair Pair { get; }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace OneXMM.Utils
 {
@@ -16,6 +17,26 @@ namespace OneXMM.Utils
                 try
                 {
                     serializer.Serialize(jsonWriter, objectToSerialize);
+                }
+                catch
+                {
+                    throw new Exception($"Cannot serialize object type {typeof(T).Name}.");
+                }
+            }
+        }
+
+        public static string SerializeToString<T>(T objectToSerialize, string dateTimeFormat = "") where T : class
+        {
+            using (var sw = new StringWriter())
+            using (var jsonWriter = new Newtonsoft.Json.JsonTextWriter(sw))
+            {
+                var serializer = new Newtonsoft.Json.JsonSerializer();
+                if (!string.IsNullOrEmpty(dateTimeFormat)) serializer.DateFormatString = dateTimeFormat;
+
+                try
+                {
+                    serializer.Serialize(jsonWriter, objectToSerialize);
+                    return sw.ToString();
                 }
                 catch
                 {

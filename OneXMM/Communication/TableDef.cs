@@ -45,6 +45,12 @@ namespace OneXMM.Communication
             new TableField("contractAddress", "varchar(44) not null"),
             ];
 
+        public static readonly TableField[] VolSurfaces = [
+            new TableField("symbol", "varchar(20) not null"),
+            new TableField("timestamp", "datetime not null"),
+            new TableField("volsurface", "varchar")
+            ];
+
         public static string GetFieldNamesWithoutId(string tableName)
         {
             TableField[]? fields = null;

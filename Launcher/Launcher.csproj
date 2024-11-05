@@ -10,7 +10,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Configuration\DefaultPairs.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Configuration\DefaultPairs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\OneXMM\OneXMM.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Enums\" />
   </ItemGroup>
 
 </Project>

@@ -34,7 +34,6 @@ while (true)
 
 //var surface = Factory.GetVolatilitySurface(new DateTime(2024, 7, 19, 18, 0, 0, DateTimeKind.Local));
 
-var pair = Config.GetPair("BTC", "USD", Blockchains.Ethereum);
 //var pricingTime = new DateTime(2024, 7, 20, 16, 0, 0, DateTimeKind.Local);
 
 //var res = FixingFinder.FindFixing(pricingTime, deribit, surface, PoolMaturities.TwoWeeks);

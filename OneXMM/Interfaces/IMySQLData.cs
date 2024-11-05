@@ -2,7 +2,7 @@
 
 namespace OneXMM.Interfaces
 {
-    internal interface IMySQLData
+    public interface IMySQLData
     {
         string[] ToFields();
     }

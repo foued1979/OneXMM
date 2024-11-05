@@ -2,12 +2,15 @@
 
 namespace OneXMM.Pricing
 {
+    using OneXMM.Communication;
     using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
 
     public class VolatilitySurface : YieldPoints, IVolatilitySurface
     {
+        internal const string DateFormat = "dd-MM-yyyy HH:mm:ss";
+
         public DateTime SurfaceDate { get; set; }
 
         public IExchange Exchange { get; set; }
@@ -75,12 +78,9 @@ namespace OneXMM.Pricing
             return Smiles.Last().Value.GetVol(forward, strike);
         }
 
-        public void Serialize()
+        public string[] ToFields()
         {
-            var now = DateTime.Now.ToUniversalTime();
-            var path = Path.Combine(Environment.CurrentDirectory, $"Configuration\\VolSurface_{SurfaceDate.ToUniversalTime().ToString("dd-MM-yyyyTHH_mm_ss")}.json");
-
-            Utils.Serialize(this, path, "dd-MM-yyyyTHH:mm:ss");
+            return [Pair.Symbol, DateTime.Now.ToUniversalTime().ToString(MySQLConnector.DatetimeFormat), Utils.SerializeToString(this, DateFormat)];
         }
     }
 }

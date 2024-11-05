@@ -8,5 +8,6 @@ namespace OneXMM
         futures_ref,
         options_ref,
         transactions,
+        vol_surfaces
     }
 }
