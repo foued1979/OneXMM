@@ -48,7 +48,7 @@ namespace OneXMM.Communication
         public static readonly TableField[] VolSurfaces = [
             new TableField("symbol", "varchar(20) not null"),
             new TableField("timestamp", "datetime not null"),
-            new TableField("volsurface", "varchar")
+            new TableField("volsurface", "text")
             ];
 
         public static string GetFieldNamesWithoutId(string tableName)

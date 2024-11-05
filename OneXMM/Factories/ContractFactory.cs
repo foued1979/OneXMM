@@ -6,6 +6,7 @@ using Nethereum.Web3;
 
 namespace OneXMM.Factories
 {
+    using Nethereum.BlockchainProcessing.BlockProcessing;
     using OneXMM.Attributes;
     using OneXMM.Communication;
     using OneXMM.Interfaces;
@@ -13,6 +14,9 @@ namespace OneXMM.Factories
     using OneXMM.Resources.RawHardhatArtifact;
     using OneXMM.Utils;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
+    using System.Runtime.Intrinsics.X86;
+    using ZstdSharp.Unsafe;
 
     public static class ContractFactory
     {
@@ -27,9 +31,20 @@ namespace OneXMM.Factories
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static FunctionABI[] GetTokenContractFunctions(Blockchains blockchain)
         {
             return _tokenContracts[blockchain].ContractBuilder.ContractABI.Functions;
+        }
+
+        public static FunctionABI[] GetPoolContractFunctions(Blockchains blockchain, KycStatus kycStatus)
+        {
+            if (blockchain == Blockchains.HardHat) blockchain = Blockchains.Ethereum;
+
+            var contractsForBlockchain = _poolContracts.Where(kv => kv.Key.Chain == blockchain && kv.Value.ContainsKey(kycStatus))?.Select(kv => kv.Value[kycStatus]).FirstOrDefault() ?? null;
+            if (contractsForBlockchain is null || contractsForBlockchain.Count == 0) return [];
+
+            return contractsForBlockchain.First().Value.ContractBuilder.ContractABI.Functions;
         }
 
         public static IRequestManager<TokenFunctions> CreateTokenRequestManager(Blockchains blockchain)
@@ -107,8 +122,22 @@ namespace OneXMM.Factories
 
                         foreach (var pair in allPairs) 
                         {
+                            if ((pair.Coin.IsNative || pair.Base.IsNative))
+                            {
+                                if (!embeddedResource.Contains("Eth")) continue;
+                            }
+                            else if (embeddedResource.Contains("Eth")) continue;
+
+                            Dictionary<KycStatus, Dictionary<PoolMaturities, Contract>>? contractsByKycStatus = null;
+                            
+                            if (!_poolContracts.TryGetValue(pair, out contractsByKycStatus))
+                            {
+                                contractsByKycStatus = new Dictionary<KycStatus, Dictionary<PoolMaturities, Contract>>(Config.nKycStatus);
+                                _poolContracts.Add(pair, contractsByKycStatus);
+                            }
+
                             var contractAddressesForPair = Config.GetPoolContractAddresses(pair, isTestMode);
-                            Dictionary<KycStatus, Dictionary<PoolMaturities, Contract>>? contractsByKycStatus = new Dictionary<KycStatus, Dictionary<PoolMaturities, Contract>>(Config.nKycStatus);
+                            
 
                             using (var stream = assembly.GetManifestResourceStream(embeddedResource))
                             using (var streamReader = new StreamReader(stream))
@@ -123,7 +152,16 @@ namespace OneXMM.Factories
                                     case Blockchains.HardHat:
                                         foreach (var contractAddressesByKycStatus in contractAddressesForPair)
                                         {
-                                            var contractsByMatu = new Dictionary<PoolMaturities, Contract>(Enum.GetValues<PoolMaturities>().Length);
+                                            if (contractAddressesByKycStatus.Key == KycStatus.KYC && !embeddedResource.Contains("KYC")
+                                                || contractAddressesByKycStatus.Key == KycStatus.NonKYC && embeddedResource.Contains("KYC")) continue;
+
+                                            Dictionary<PoolMaturities, Contract>? contractsByMatu = null;
+
+                                            if (!contractsByKycStatus.TryGetValue(contractAddressesByKycStatus.Key, out contractsByMatu))
+                                            {
+                                                contractsByMatu = new Dictionary<PoolMaturities, Contract>(Enum.GetValues<PoolMaturities>().Length);
+                                                contractsByKycStatus.Add(contractAddressesByKycStatus.Key, contractsByMatu);
+                                            }
 
                                             foreach (var matu in contractAddressesByKycStatus.Value)
                                             {
@@ -132,8 +170,6 @@ namespace OneXMM.Factories
 
                                                 contractsByMatu.Add(matu.Key, contract);
                                             }
-
-                                            contractsByKycStatus.Add(contractAddressesByKycStatus.Key, contractsByMatu);
                                         }
                                         break;
                                     default:

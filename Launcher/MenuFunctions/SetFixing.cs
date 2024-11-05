@@ -68,7 +68,7 @@ namespace Launcher.MenuFunctions
                     foreach (var pairSetting in preset.Pairs)
                     {
                         listOfPresetPairs.Add(Config.GetPair(pairSetting.Symbol, pairSetting.Chain));
-                        throw
+                        throw new Exception();
                     }
 
                     if (pairIds.Length == 1)

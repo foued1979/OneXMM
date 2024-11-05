@@ -4,7 +4,7 @@ namespace XMMUI.Content
 {
     internal static class FunctionDescriptions
     {
-        public static Dictionary<string, string> Descriptions = new Dictionary<string, string>
+        public static Dictionary<string, string> TokenDescriptions = new Dictionary<string, string>
         {
             { "allocate", "Allocates tokens to a specific wallet." },
             { "allowance", "Checks the allowance of provided to a spender by a wallet owner." },
@@ -35,6 +35,17 @@ namespace XMMUI.Content
             { "updateTokenExchangeRate", "Updates the exchange rate for a given token against 1XMM token.\nThis activates the token exchange authorization." },
             { "validateBridgeIn", "Validates a bridge in.\nUser is credited the 1XMM tokens on the destination contract." },
             { "validateBridgeOut", "Validates a bridge out.\nUser's 1XMM tokens are provided back to the AvailableTokens on the origin contract." },
+        };
+
+        public static Dictionary<string, string> PoolDescriptions = new Dictionary<string, string>
+        {
+            { "addIndexofZeros", "Adds the open fixing indices for which a position has reached -100% performance." },
+            { "changeCompensationActivation", "Sets whether compensation is activated or not."},
+            { "changeCompensationSide", "Changes the Long/Short side to be compensated in case of Loss.\n0: None | 1: Long | 2: Short | 3: Both." },
+            { "changeCompensationToken", "Changes the compensation token." },
+            { "changeFeeRebateThreshold", "Changes the transaction Fee rebate threshold." },
+            { "changeLeverageStatus", "Sets whether leverage is allowed or not." },
+            { "changeMinimumDeposit", "Changes the minimum deposit amount on the pool." }
         };
     }
 }

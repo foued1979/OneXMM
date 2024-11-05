@@ -12,6 +12,10 @@
     <None Remove="Configuration\NodeSettings.txt" />
     <None Remove="Configuration\Referential.json" />
     <None Remove="Configuration\SymbolMapping.json" />
+    <None Remove="Resources\CoinKYCPool.json" />
+    <None Remove="Resources\CoinPool.json" />
+    <None Remove="Resources\EthKYCPool.json" />
+    <None Remove="Resources\EthPool.json" />
     <None Remove="Resources\Token.json" />
   </ItemGroup>
 
@@ -34,6 +38,10 @@
     <EmbeddedResource Include="Configuration\Referential.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="Resources\CoinKYCPool.json" />
+    <EmbeddedResource Include="Resources\CoinPool.json" />
+    <EmbeddedResource Include="Resources\EthKYCPool.json" />
+    <EmbeddedResource Include="Resources\EthPool.json" />
     <EmbeddedResource Include="Resources\Token.json" />
   </ItemGroup>
 

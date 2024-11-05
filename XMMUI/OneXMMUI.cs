@@ -14,10 +14,10 @@ namespace XMMUI
     {
         #region Settings
 
-        private static Settings _settings;
-        private static Blockchains _selectedBlockchain;
+        internal static Settings _settings;
+        internal static Blockchains _selectedBlockchain;
 
-        private static bool _auto_manage_decimals = true;
+        internal static bool _auto_manage_decimals = true;
 
         #endregion
 
@@ -49,7 +49,7 @@ namespace XMMUI
             var function = selectedFunction.ToEnum<TokenFunctions>();
             var attr = function.GetAttributesForEnum<TokenFunctions, ContractFunctionAttribute>();
 
-            tokenFunctionDescrLbl.Text = FunctionDescriptions.Descriptions[selectedFunction];
+            tokenFunctionDescrLbl.Text = FunctionDescriptions.TokenDescriptions[selectedFunction];
 
             var inputParameters = _tokenFunctionParameters[selectedFunction];
 

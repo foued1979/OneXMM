@@ -124,7 +124,7 @@ namespace OneXMM.Communication
                         break;
                     case MySQLTables.vol_surfaces:
                         sb.Append($"CREATE TABLE {MySQLTables.vol_surfaces.ToString()} (");
-                        foreach (var field in TableDef.Transactions)
+                        foreach (var field in TableDef.VolSurfaces)
                         {
                             if (isFirstField) { sb.Append($"{field.ColumnName} {field.Definition}"); isFirstField = false; }
                             else sb.Append($",{field.ColumnName} {field.Definition}");

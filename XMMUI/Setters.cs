@@ -1,14 +1,15 @@
-﻿using OneXMM.Attributes;
-using OneXMM.Factories;
-using OneXMM.Interfaces;
-using OneXMM.Utils;
-using OneXMM;
-using System;
+﻿using System;
 using Nethereum.ABI.Model;
 using System.Runtime.CompilerServices;
 
 namespace XMMUI
 {
+    using OneXMM.Attributes;
+    using OneXMM.Factories;
+    using OneXMM.Interfaces;
+    using OneXMM.Utils;
+    using OneXMM;
+
     public partial class OneXMMUI
     {
         private static IRequestManager<TokenFunctions> _tokenRequestManager;
