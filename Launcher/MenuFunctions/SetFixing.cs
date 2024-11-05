@@ -1,4 +1,5 @@
 ﻿using OneXMM;
+using OneXMM.Utils;
 using System;
 
 namespace Launcher.MenuFunctions
@@ -51,7 +52,7 @@ namespace Launcher.MenuFunctions
             foreach (var pairId in pairIds)
             {
                 var pair = pairs[Convert.ToUInt32(pairId) - 1];
-                Tempos.AddPairToTempos(pair, Config.GetFixingIntervalsForPair(pair));
+                Tempos.AddPairToTempos(pair, Config.GetFixingIntervalsForPair(pair).Merge());
             }
         }
     }

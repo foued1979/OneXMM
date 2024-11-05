@@ -13,7 +13,7 @@ namespace OneXMM.Configuration
 
     public struct PoolSetting
     {
-        public string TermValue { get; set; }
+        public string Term { get; set; }
         public FixingIntervals FixingInterval { get; set; }
         internal string TestAddress { get; set; }
         internal string LiveAddress { get; set; }

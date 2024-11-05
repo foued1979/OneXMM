@@ -25,16 +25,21 @@ namespace XMMUI
                 tokenFunctionList.Items.Add(function.ToString());
             }
 
-            SetRequestManager();
+            SetTokenRequestManager();
+
+            foreach (var pair in Config.GetPairs())
+            {
+                contractsControl.TabPages.Add(new PoolTab(pair));
+            }
         }
 
-        private void SetRequestManager()
+        private void SetTokenRequestManager()
         {
             var attr = _selectedBlockchain.GetAttributeForEnum<Blockchains, BlockchainDetailsAttribute>();
 
             if (attr.BlockchainType == BlockchainTypes.EthereumLike)
             {
-                _tokenRequestManager = ContractFactory.CreateRequestManager<TokenFunctions>(_selectedBlockchain);
+                _tokenRequestManager = ContractFactory.CreateTokenRequestManager(_selectedBlockchain);
                 _tokenFunctionParameters = new SortedDictionary<string, Parameter[]>();
                 _tokenFunctionOutputs = new SortedDictionary<string, Parameter[]>();
 

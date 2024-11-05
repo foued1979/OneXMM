@@ -193,6 +193,20 @@ namespace OneXMM.Utils
             }
         }
 
+        public static Tools.IntervalSelection Merge(this Dictionary<KycStatus, Tools.IntervalSelection> dict)
+        {
+            IEnumerable<FixingIntervals> activeIntervals = new List<FixingIntervals>(Enum.GetValues<FixingIntervals>().Length);
+            IEnumerable<KeyValuePair<FixingIntervals, FixingIntervals>> redundantIntervals = new List<KeyValuePair<FixingIntervals, FixingIntervals>>(Enum.GetValues<FixingIntervals>().Length);
+
+            foreach (var kv in dict)
+            {
+                activeIntervals = activeIntervals.Union(kv.Value.activeIntervals);
+                redundantIntervals = redundantIntervals.Union(kv.Value.redundantIntervals);
+            }
+
+            return new IntervalSelection(activeIntervals.ToArray(), redundantIntervals.ToArray());
+        }
+
         public static T[] RemoveElementAt<T>(this T[] array, int index)
         {
             if (index >= array.Length) return array;

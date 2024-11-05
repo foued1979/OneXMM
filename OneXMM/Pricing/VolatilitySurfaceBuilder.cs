@@ -159,7 +159,12 @@ namespace OneXMM.Pricing
         {
             requiredSmiles = new Dictionary<DateTime, SABR>(allSmiles.Count);
 
-            var poolMaturities = Config._poolUpdateCfg[pair][updateTempo].ToPoolMaturity();
+            IEnumerable<PoolMaturities> poolMaturities = [];
+            
+            foreach (KycStatus kycStatus in Enum.GetValues<KycStatus>())
+            {
+                poolMaturities = poolMaturities.Union(Config._poolUpdateCfg[pair][kycStatus][updateTempo]);
+            }
             var today = allSmiles.First().Key.Kind == DateTimeKind.Utc
                 ? new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 0, 0, 0, DateTimeKind.Utc)
                 : DateTime.Today;

@@ -78,7 +78,7 @@ namespace OneXMM
                     foreach (var poolSetting in poolSettings.Value)
                     {
                         PoolMaturities[]? listOfMatu = null;
-                        var poolMatu = poolSetting.TermValue.ToPoolMaturity();
+                        var poolMatu = poolSetting.Term.ToPoolMaturity();
 
                         if (!matuByFixingInterval.TryGetValue(poolSetting.FixingInterval, out listOfMatu))
                         {
