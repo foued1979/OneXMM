@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace XMMUI.Content
 {
@@ -45,7 +47,32 @@ namespace XMMUI.Content
             { "changeCompensationToken", "Changes the compensation token." },
             { "changeFeeRebateThreshold", "Changes the transaction Fee rebate threshold." },
             { "changeLeverageStatus", "Sets whether leverage is allowed or not." },
-            { "changeMinimumDeposit", "Changes the minimum deposit amount on the pool." }
+            { "changeMinimumDeposit", "Sets the minimum deposit amount on the pool." },
+            { "changeMinFeeRebateThreshold", "Sets the minimum fee rebate threshold." },
+            { "changeUpdateInterval", "Changes the update interval for the pool.\n0: 1min | 1: 2min | 2: 3min | 3: 5min | 4: 10min | 5: 15min | 6: 20min | 7: 30min | 8: 1h | 9: 3h | 10: 4h" },
+            { "closePosition", "Closes the position at given index for msg.sender."},
+            { "createPositionForUser", "Closes the position at given index on behalf of user." },
+            { "deposit", "Executes a deposit on the pool." },
+            { "getAccumulatedFee", "Gets the fee accumulated since inception on the pool." },
+            { "getCompensationTokenBalance", "Gets pool's balance of compensation token." },
+            { "getFixings", "Gets the fixings recorded on the pool." },
+            { "getFixingsFromTo", "Gets the fixings recorded on the pool between 2 dates." },
+            { "getAllLastRateIndices", "Gets the last index values for each of the leverage levels." },
+            { "getLastRateIndices", "Gets the last index value for a given leverage." },
+            { "getMissedFixings", "Gets the list of missed fixing indices." },
+            { "getPoolPendingPositions", "Gets the positions which are pending to be accounted at next fixing, for a given leverage level." },
+            { "getPoolPositions", "Gets pool alive positions, for a given leverage level." },
+            { "getPosition", "Gets the position at given index position, for msg.sender." },
+            { "getPositions", "Gets the position of msg.sender."},
+            { "reducePosition", "Reduces msg.sender's position at the given index." },
+            { "setApplyPenaltyFee", "Sets whether the penalty fee should apply.\nPenalty fee applies when a user closes a position before the expected Term." },
+            { "setCompensationRatio", "Sets the compensation ratio.\nCompensation ratio is the percentage of the loss which will be covered by the Compensation Token." },
+            { "setConversionRate", "Sets the conversion rate, for the compensation computation.\nConversion rate is the rate: Pool_Token to Compensation_Token." },
+            { "setFirstFixing", "Sets the first fixing for the pool.\nSetting the first fixing activates the pool." },
+            { "setFixing", "Sets a fixing." },
+            { "setNewFee", "Sets the new pool transaction fee for the pool.\nThe fee is expressed in % of basis point, and is computed on a daily basis." },
+            { "setNewPenalty", "Sets the new penalty.\nThe Penalty fee applies when a user offsets a position before expected Term." },
+            { "updateMissedFixing", "Updates a missed fixing." }
         };
     }
 }

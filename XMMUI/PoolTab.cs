@@ -18,6 +18,8 @@ namespace XMMUI
         private readonly string _symbol;
         private readonly Dictionary<string, Control> _controls;
 
+        private PoolMaturities _selectedMaturity;
+
         private Dictionary<PoolMaturities, IRequestManager<PoolFunctions>> _requestManagers = new Dictionary<PoolMaturities, IRequestManager<PoolFunctions>>();
         private SortedDictionary<string, Parameter[]> _poolFunctionParameters;
         private SortedDictionary<string, Parameter[]> _poolFunctionOutputs;
@@ -48,7 +50,7 @@ namespace XMMUI
 
             Controls.Add(CreateFunctionList(symbol));
             Controls.Add(CreateKYCCheckBox(symbol));
-            Controls.Add(CreateMaturityCombo(symbol));
+            Controls.Add(CreateMaturityCombo(symbol, defaultFontFamily));
             Controls.Add(CreateFunctionDescriptionGroup(symbol, defaultFontFamily));
             Controls.Add(CreateParamDataGridView(symbol));
             Controls.Add(CreateResultDataGridView(symbol));
@@ -59,6 +61,7 @@ namespace XMMUI
         {
             _poolFunctionParameters = new SortedDictionary<string, Parameter[]>();
             _poolFunctionOutputs = new SortedDictionary<string, Parameter[]>();
+            FillInMaturityCombo((_controls[$"{_symbol}MaturityBox"] as ComboBox)!, new FontFamily("Segoe UI"));
 
             var kycStatus = (_controls[$"{_symbol}KYCCheckBox"] as CheckBox)!.Checked ? KycStatus.KYC : KycStatus.NonKYC;
             var functions = ContractFactory.GetPoolContractFunctions(OneXMMUI._selectedBlockchain, kycStatus);
@@ -117,19 +120,36 @@ namespace XMMUI
             return checkBox;
         }
 
-        private ComboBox CreateMaturityCombo(string symbol)
+        private ComboBox CreateMaturityCombo(string symbol, FontFamily defaultFontFamily)
         {
             var comboBox = new ComboBox()
             {
                 Name = $"{symbol}MaturityBox",
-                Text = "Select Tenor",
                 Location = new Point(6, 30),
-                Anchor = AnchorStyles.Left | AnchorStyles.Top,
+                Anchor = AnchorStyles.Left | AnchorStyles.Top
             };
+
+            comboBox.SelectedIndexChanged += ComboBox_SelectedIndexChanged;
 
             _controls.Add($"{symbol}MaturityBox", comboBox);
 
             return comboBox;
+        }
+
+        private void FillInMaturityCombo(ComboBox cb, FontFamily defaultFontFamily)
+        {
+            cb.Items.Clear();
+
+            cb.Font = new Font(defaultFontFamily, 9f, FontStyle.Italic);
+            cb.Text = "Select Tenor";
+            cb.ForeColor = Color.Gray;
+
+            var maturities = Config.GetPoolMaturities(_pair, (_controls[$"{_symbol}KYCCheckBox"] as CheckBox)!.Checked ? KycStatus.KYC : KycStatus.NonKYC);
+
+            foreach (var matu in maturities)
+            {
+                cb.Items.Add(matu);
+            }
         }
 
         private GroupBox CreateFunctionDescriptionGroup(string symbol, FontFamily defaultFontFamily)
@@ -363,6 +383,20 @@ namespace XMMUI
             var res = MessageBox.Show($"Send transaction to {_symbol} on {OneXMMUI._selectedBlockchain}?", "Tx Confirmation", MessageBoxButtons.OKCancel);
 
             if (res == DialogResult.OK) { throw new NotImplementedException(); }
+        }
+
+        private void ComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            var cb = (sender as ComboBox)!;
+            if (cb.SelectedIndex == -1) return;
+
+            if (cb.ForeColor != Color.Black)
+            {
+                cb.Font = new Font(new FontFamily("Segoe UI"), 9f, FontStyle.Regular);
+                cb.ForeColor = Color.Black;
+            }
+
+            _selectedMaturity = (PoolMaturities)cb.SelectedItem!;
         }
 
         #endregion

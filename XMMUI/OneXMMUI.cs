@@ -79,6 +79,8 @@ namespace XMMUI
         private void tokenSendBtn_Click(object sender, EventArgs e)
         {
             if (tokenFunctionList.SelectedIndex == -1) { return; }
+            var confirm = MessageBox.Show($"Send transaction to 1XMM contract on {_selectedBlockchain}?", "Tx Confirmation", MessageBoxButtons.OKCancel);
+            if (confirm != DialogResult.OK) return;
 
             var selectedFunction = tokenFunctionList.SelectedItem!.ToString()!;
             
