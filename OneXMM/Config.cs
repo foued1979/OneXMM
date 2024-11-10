@@ -5,6 +5,7 @@ namespace OneXMM
 {
     using OneXMM.Communication;
     using OneXMM.Configuration;
+    using OneXMM.Factories;
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
     using System.Collections.Generic;
@@ -96,6 +97,8 @@ namespace OneXMM
                     Tools.AdjustMatuByFixingInterval(matuByFixingInterval);
                 }
             }
+
+            ContractFactory.SetContractFactory(IsTestMode);
         }
 
         public static ExchangeConfig GetExchangeConfig(Exchanges exchange) => _settings.Exchanges[exchange];
@@ -195,6 +198,7 @@ namespace OneXMM
         public static Tools.IntervalSelection GetFixingIntervalsForPair(Pair pair, KycStatus kycStatus)
         {
             var fixingIntervals = _poolUpdateCfg[pair][kycStatus].Keys.ToArray();
+            if (fixingIntervals.Length == 0) return new Tools.IntervalSelection([], []);
             return Tools.SplitIntervals(fixingIntervals);
         }
         

@@ -134,6 +134,7 @@
             tokenResultsGrid.AllowUserToAddRows = false;
             tokenResultsGrid.AllowUserToDeleteRows = false;
             tokenResultsGrid.AllowUserToResizeRows = false;
+            tokenResultsGrid.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             tokenResultsGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             tokenResultsGrid.Columns.AddRange(new DataGridViewColumn[] { outputNameCol, outputValueCol });
             tokenResultsGrid.Location = new Point(581, 157);
@@ -159,7 +160,7 @@
             // 
             // tokenSendBtn
             // 
-            tokenSendBtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            tokenSendBtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             tokenSendBtn.BackColor = Color.YellowGreen;
             tokenSendBtn.Location = new Point(162, 356);
             tokenSendBtn.Name = "tokenSendBtn";

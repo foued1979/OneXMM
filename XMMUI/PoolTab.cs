@@ -192,9 +192,10 @@ namespace XMMUI
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 Location = new Point(6, 81),
+                Size = new Size(398, 58),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left,
                 Font = new Font(defaultFontFamily, 9f, FontStyle.Regular),
-                AutoSize = true,
+                AutoScroll = true,
             };
 
             _controls.Add($"{symbol}InputFlowLayout", inputFlowLayout);
