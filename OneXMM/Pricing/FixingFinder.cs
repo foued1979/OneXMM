@@ -36,6 +36,7 @@ namespace OneXMM.Pricing
 
         private static Func<double, double> GetFunction(DateTime asof, double spot, IExchange exchange, Pair pair, DateTime expiry, IVolatilitySurface volatilitySurface)
         {
+            throw new Exception("Option favored by the forward yield should be calibrated such as K_opt - S + Opt = 0 => then we look for strike of other option such as Call = Put");
             return new Func<double, double>((k) =>
             {
                 var option = new Option(exchange, pair, OptionTypes.Put, k, expiry);
