@@ -5,34 +5,126 @@
       "ContractSymbol": "WBTC",
       "InternalSymbol": "BTC",
       "Address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
-      "Chain": "Ethereum"
+      "Chain": "Ethereum",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 3717
+        }
+      }
     },
     {
       "Id": 1,
       "ContractSymbol": "ETH",
       "InternalSymbol": "ETH",
       "Address": "0x",
-      "Chain": "Ethereum"
+      "Chain": "Ethereum",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 1027
+        }
+      }
     },
     {
       "Id": 2,
       "ContractSymbol": "WETH",
       "InternalSymbol": "ETH",
       "Address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-      "Chain": "Ethereum"
+      "Chain": "Ethereum",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 2396
+        }
+      }
     },
     {
       "Id": 3,
       "ContractSymbol": "USDT",
       "InternalSymbol": "USDT",
       "Address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
-      "Chain": "Ethereum"
+      "Chain": "Ethereum",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 825
+        }
+      }
     },
     {
       "Id": 4,
       "ContractSymbol": "USD",
       "InternalSymbol": "USD",
       "Address": ""
+    },
+    {
+      "Id": 5,
+      "ContractSymbol": "SOL",
+      "InternalSymbol": "SOL",
+      "Address": "0x",
+      "Chain": "Solana",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 5426
+        }
+      }
+    },
+    {
+      "Id": 6,
+      "ContractSymbol": "BNB",
+      "InternalSymbol": "BNB",
+      "Address": "0x",
+      "Chain": "BSC",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 1839
+        }
+      }
+    },
+    {
+      "Id": 7,
+      "ContractSymbol": "USDC",
+      "InternalSymbol": "USDC",
+      "Address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "Chain": "Ethereum",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 3408
+        }
+      }
+    },
+    {
+      "Id": 8,
+      "ContractSymbol": "USDC",
+      "InternalSymbol": "USDC",
+      "Address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "Chain": "Solana",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 3408
+        }
+      }
+    },
+    {
+      "Id": 9,
+      "ContractSymbol": "DOGE",
+      "InternalSymbol": "DOGE",
+      "Address": "0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+      "Chain": "BSC",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 74
+        }
+      }
+    },
+    {
+      "Id": 10,
+      "ContractSymbol": "LINK",
+      "InternalSymbol": "LINK",
+      "Address": "0x514910771af9ca656af840dff83e8264ecf986ca",
+      "Chain": "Ethereum",
+      "DataFeedInfo": {
+        "CoinMarketCap": {
+          "Id": 1975
+        }
+      }
     }
   ],
   "TokenAddresses": {
@@ -47,6 +139,7 @@
   },
   "PairDefs": [
     {
+      "Id": 0,
       "CoinId": 0,
       "BaseId": 4,
       "RefExchange": "Deribit",
@@ -73,9 +166,10 @@
         ],
         "KYC": []
       },
-        "CorrelatedVol": false
-      },
+      "CorrelatedVol": false
+    },
     {
+      "Id": 1,
       "CoinId": 1,
       "BaseId": 4,
       "RefExchange": "Deribit",

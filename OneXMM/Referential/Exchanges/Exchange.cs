@@ -24,8 +24,8 @@ namespace OneXMM.Referential.Exchanges
         /// Gets the cutoff in local time.
         /// </summary>
         public TimeSpan Cutoff { get; }
-        public abstract bool QuoteInBase { get; }
-        public abstract bool IsDiscounted { get; }
+        public bool IsQuotedInBase { get; }
+        public bool IsDiscounted { get; }
         public bool ExchangeUsesUniversalTime { get; private set; }
 
         public Exchange(OneXMM.Exchanges exchange, bool isTestMode) 
@@ -34,9 +34,12 @@ namespace OneXMM.Referential.Exchanges
             IsTestMode = isTestMode;
 
             _config = OneXMM.Config.GetExchangeConfig(exchange);
+
             ExchangeUsesUniversalTime = _config.UseUniversalTime ?? throw new Exception($"Exchange - UseUniversalTime has not been set for {exchange}.");
             Cutoff = _config.Cutoff.ToTimeSpan();
             Cutoff = Cutoff.Add(TimeZoneInfo.Local.GetUtcOffset(DateTime.Now));
+            IsDiscounted = _config.OptionsAreDiscounted;
+            IsQuotedInBase = _config.OptionsAreQuotedInBase;
             
 
             var rpcUri = (isTestMode ? _config.TestRPCUri : _config.ProdRPCUri).TrimEnd('/');
@@ -65,7 +68,26 @@ namespace OneXMM.Referential.Exchanges
 
         public abstract double GetSpot(Futures futures);
 
+        public abstract Task<double> GetSpotAsync(Futures futures);
+
+        public double[] GetSpot(Futures[] futures)
+        {
+            var tasks = new Task<double>[futures.Length];
+            var index = 0;
+
+            foreach (var fut in futures)
+            {
+                tasks[index] = Task.Run(async () => await GetSpotAsync(fut));
+                index++;
+            }
+
+            Task.WaitAll(tasks);
+            return tasks.Select(t => t.Result).ToArray();
+        }
+
         public abstract double GetOptionPrice(Option option);
+
+        public abstract Task<double> GetOptionPriceAsync(Option option);
 
         public abstract string OptionNameToExpiry(string instrumentName);
 
@@ -128,11 +150,12 @@ namespace OneXMM.Referential.Exchanges
             return getSpotTasks[0].Result + getSpotTasks[2].Result * (getSpotTasks[1].Result - getSpotTasks[0].Result);
         }
 
-        public abstract SortedDictionary<Option, double> GetOptionPrices(Pair pair);
+        public abstract SortedList<DateTime, Dictionary<Option, double>> GetOptionPrices(SortedList<DateTime, IEnumerable<Option>> options);
 
         public DateTime ToExpiry(string expiryStr)
         {
-            var date = DateTime.ParseExact(expiryStr, _config.ExpiryFormat, null).Add(Cutoff);
+            if (expiryStr.Contains("SEP") && !expiryStr.Contains("SEPT")) expiryStr = expiryStr.Replace("SEP", "SEPT");
+            var date = DateTime.ParseExact(expiryStr, _config.ExpiryFormat, null, System.Globalization.DateTimeStyles.AssumeUniversal).Add(Cutoff);
 
             if (ExchangeUsesUniversalTime)
             {

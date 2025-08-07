@@ -6,8 +6,9 @@ namespace OneXMM.Utils
     using Nethereum.RPC.Eth.DTOs;
     using OneXMM.Attributes;
     using OneXMM.Communication;
-    using OneXMM.Pricing;
+    using OneXMM.Pricing.Smiles;
     using OneXMM.Referential;
+    using Org.BouncyCastle.Tls;
 
     public static class Tools
     {
@@ -29,8 +30,8 @@ namespace OneXMM.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double FwdToStrikeRatios25(double expiry)
         {
-            expiry = Math.Max(expiry, _minExp);
-            return Math.Exp(_moneyness25 * Math.Sqrt(expiry));
+            expiry = System.Math.Max(expiry, _minExp);
+            return System.Math.Exp(_moneyness25 * System.Math.Sqrt(expiry));
         }
 
         public static SABR[] ExtractSmiles(IEnumerable<SABR> allSmiles, DateTime matu)
@@ -212,6 +213,37 @@ namespace OneXMM.Utils
             if (index >= array.Length) return array;
             array[index] = array.Last();
             return array.SkipLast(1).ToArray();
+        }
+
+        public static SortedList<DateTime, IEnumerable<Option>> FilterByExpiry(this IEnumerable<Option> options)
+        {
+            var res = new SortedList<DateTime, IEnumerable<Option>>();
+            foreach (var option in options)
+            {
+                if (res.ContainsKey(option.Expiry)) res[option.Expiry] = res[option.Expiry].Append(option);
+                else res.Add(option.Expiry, new List<Option>() { option });
+            }
+            return res;
+        }
+
+        public static SortedList<TKey, IEnumerable<TValue>> ToSortedList<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, IEnumerable<TValue>>> l)
+            where TKey : notnull
+        {
+            var res = new SortedList<TKey, IEnumerable<TValue>>();
+
+            foreach (var kv in l)
+            {
+                if (res.TryGetValue(kv.Key, out var r))
+                {
+                    foreach (var v in kv.Value) res[kv.Key] = r.Append(v);
+                }
+                else
+                {
+                    res.Add(kv.Key, kv.Value);
+                }
+            }
+
+            return res;
         }
     }
 }

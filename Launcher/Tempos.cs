@@ -98,7 +98,7 @@ namespace Launcher
 
         private static void NewTimer_Elapsed(object? sender, ElapsedEventArgs e)
         {
-            if (ExchangeServices.ReferentialDate != DateTime.Today) ExchangeServices.UpdateOptionAndFuturesReferential(PairsInScope);
+            if (ExchangeService.ReferentialDate != DateTime.Today) ExchangeService.UpdateOptionAndFuturesReferential(PairsInScope);
 
             var timer = (sender as System.Timers.Timer)!;
 
@@ -118,10 +118,10 @@ namespace Launcher
                 // We check if we should use a bigger fixing interval, if the pair as redundant frequencies
                 fixingInterval = CheckRedundancy(fixingInterval, pair);
 
-                var exchange = ExchangeServices.GetExchange(pair);
-                if (exchange.IsCutoffPast()) ExchangeServices.UpdateOptionAndFuturesReferential(pair);
+                var exchange = ExchangeService.GetExchange(pair);
+                if (exchange.IsCutoffPast()) ExchangeService.UpdateOptionAndFuturesReferential(pair);
 
-                if (!ExchangeServices.GetRefInstrumentsForPair(pair, out var refInstr)) throw new Exception($"Tempos - The pair {pair.Symbol} is not marked as correlated vol but there are no ref instruments.");
+                if (!ExchangeService.GetRefInstrumentsForPair(pair, out var refInstr)) throw new Exception($"Tempos - The pair {pair.Symbol} is not marked as correlated vol but there are no ref instruments.");
 
                 var volSurfaceBuilder = Factory.CreateVolSurfaceBuilder(DateTime.Now.ToUniversalTime(), pair, exchange, refInstr.Item1, refInstr.Item2);
                 var volSurface = volSurfaceBuilder.Calibrate(fixingInterval);

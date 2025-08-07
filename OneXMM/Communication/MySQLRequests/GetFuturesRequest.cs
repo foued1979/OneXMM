@@ -37,7 +37,7 @@ namespace OneXMM.Communication.MySQLRequests
                     Symbol = _reader.GetString(1), 
                     UndlSymbol = _reader.GetString(2), 
                     Expiry = _reader.GetDateTime(3), 
-                    Exchange = ExchangeServices.GetExchange(_reader.GetString(4).ToEnum<Exchanges>()) });
+                    Exchange = ExchangeService.GetExchange(_reader.GetString(4).ToEnum<Exchanges>()) });
             }
 
             return res.ToArray();

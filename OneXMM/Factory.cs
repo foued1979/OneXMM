@@ -4,8 +4,7 @@ namespace OneXMM
 {
     using OneXMM.Communication;
     using OneXMM.Interfaces;
-    using OneXMM.Pricing;
-    using OneXMM.Referential;
+    using OneXMM.Pricing.VolatilitySurfaces;
     using OneXMM.Referential.Assets;
 
     public static class Factory
@@ -21,19 +20,6 @@ namespace OneXMM
             }
 
             return null;
-        }
-
-        public static VolatilitySurfaceBuilder CreateVolSurfaceBuilder(DateTime asof, Pair pair, IExchange exchange, Futures[] futures, Option[] options)
-        {
-            var newSurfaceBuilder = new VolatilitySurfaceBuilder(asof, pair, exchange);
-
-            var fillTasks = new Task[2];
-
-            fillTasks[0] = Task.Run(() => { foreach (var option in options) if (option.Pair.Equals(pair)) newSurfaceBuilder.AddOption(option); });
-            fillTasks[1] = Task.Run(() => { foreach (var future in futures) if (future.Pair.Equals(pair)) newSurfaceBuilder.AddFutures(future); });
-
-            Task.WaitAll(fillTasks);
-            return newSurfaceBuilder;
         }
 
         public static double ComputeCorrelatedVol(Pair pair, FixingIntervals updateTempo)

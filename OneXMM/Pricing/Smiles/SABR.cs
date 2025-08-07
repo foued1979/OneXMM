@@ -1,12 +1,13 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
-namespace OneXMM.Pricing
+namespace OneXMM.Pricing.Smiles
 {
-    using MathNet.Numerics.Integration;
+    using OneXMM;
+    using OneXMM.Interfaces;
     using OneXMM.Referential;
-    using System.Runtime.CompilerServices;
 
-    public sealed class SABR
+    public sealed class SABR : ISmile
     {
         public DateTime SmileDate { get; private set; }
         public DateTime SmileExpiry { get; }
@@ -27,14 +28,17 @@ namespace OneXMM.Pricing
             SmileExpiry = smileExpiry;
         }
 
-        public SABR WithParameters(double alpha, double vega, double beta, double rho)
+        public void UpdateParameters(params double[] args)
+        {
+            UpdateParameters(args[0], args[1], args[2], args[3]);
+        }
+
+        public void UpdateParameters(double alpha, double vega, double beta, double rho)
         {
             Alpha = alpha;
             Vega = vega;
             Beta = beta;
             Rho = rho;
-
-            return this;
         }
 
         public void UpdateSmileDate(DateTime smileDate)
@@ -54,12 +58,12 @@ namespace OneXMM.Pricing
             }
         }
 
-        public double GetVol(double forward, double strike)
+        public double GetVol(DateTime asof, double forward, double strike)
         {
-            var tenor = (SmileExpiry - SmileDate).TotalDays * Constants.OneOver365;
+            var tenor = (SmileExpiry - asof).TotalDays * Constants.OneOver365;
             if (forward == 0 || strike == 0) return double.NaN;
 
-            var ln = Math.Log(forward / strike);
+            var ln = System.Math.Log(forward / strike);
             var one_minus_beta = 1 - Beta;
             var lnb = one_minus_beta * ln;
             var sigmaB = one_minus_beta * Alpha;
@@ -70,7 +74,7 @@ namespace OneXMM.Pricing
 
             var f3 = sigmaB * sigmaB / (24.0 * midSq) + 0.25 * Rho * Alpha * Vega * Beta / mid + (2 - 3 * Rho * Rho) * Vega * Vega / 24.0;
 
-            if (forward == strike) return Alpha / Math.Pow(forward, one_minus_beta) * (1 + f3 * tenor);
+            if (forward == strike) return Alpha / System.Math.Pow(forward, one_minus_beta) * (1 + f3 * tenor);
 
             var f1 = 1 + lnbSq / 24.0 + lnbSq * lnbSq / 1920.0;
             var f2 = Alpha / (mid * f1);
@@ -80,22 +84,22 @@ namespace OneXMM.Pricing
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double cf(double f, double k, double Beta)
+        private static double cf(double f, double k, double Beta)
         {
-            return Math.Pow(f * k, 0.5 * (1 - Beta));
+            return System.Math.Pow(f * k, 0.5 * (1 - Beta));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double eta(double atm, double alpha, double cf, double f, double k)
+        private static double eta(double atm, double alpha, double cf, double f, double k)
         {
-            return alpha / atm * cf * Math.Log(f / k);
+            return alpha / atm * cf * System.Math.Log(f / k);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double Xsi(double rho, double eta)
+        private static double Xsi(double rho, double eta)
         {
-            var s = Math.Sqrt(1 - 2 * rho * eta + eta * eta);
-            return Math.Log((s - rho + eta) / (1 - rho));
+            var s = System.Math.Sqrt(1 - 2 * rho * eta + eta * eta);
+            return System.Math.Log((s - rho + eta) / (1 - rho));
         }
     }
 }

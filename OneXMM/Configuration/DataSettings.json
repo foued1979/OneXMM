@@ -1,0 +1,4 @@
+﻿{
+  "Feeders": [ "CoinMarketCap" ],
+  "Exchanges": [ "Deribit" ]
+}

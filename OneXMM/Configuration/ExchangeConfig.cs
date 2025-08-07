@@ -12,5 +12,7 @@ namespace OneXMM.Configuration
         public string Cutoff { get; set; } = "";
         public bool? UseUniversalTime { get; set; }
         public string ExpiryFormat { get; set; } = "";
+        public bool OptionsAreDiscounted { get; set; }
+        public bool OptionsAreQuotedInBase { get; set; }
     }
 }

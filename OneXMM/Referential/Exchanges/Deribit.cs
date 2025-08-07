@@ -15,9 +15,6 @@ namespace OneXMM.Referential.Exchanges
         private string _connectionToken;
         private bool _optionsReceived = false;
         private DeribitMarkPriceOptions[] _options;
-        
-        public override bool QuoteInBase => false;
-        public override bool IsDiscounted => true;
 
         public Deribit(bool isTestMode) : base(OneXMM.Exchanges.Deribit, isTestMode)
         {
@@ -35,7 +32,7 @@ namespace OneXMM.Referential.Exchanges
             var optionDef = Utils.ConvertJsonToObject<DeribitGetInstruments>(response.ReadAsStream());
 
             if (optionDef is null || optionDef.testnet != IsTestMode) throw new Exception("Issue loading options from Deribit.");
-            var options =  optionDef.result.Select(o => DeribitInstrumentDef.ToOption(o, pair.Chain)).Where(o => o.OptionType == OptionTypes.Put).ToArray();
+            var options =  optionDef.result.Select(o => DeribitInstrumentDef.ToOption(o, pair.Chain)).Where(o => o.OptionType == OptionTypes.Call).ToArray();
 
             return options;
         }
@@ -83,6 +80,16 @@ namespace OneXMM.Referential.Exchanges
             return spotDef.result.Spot;
         }
 
+        public async override Task<double> GetSpotAsync(Futures futures)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book_by_instrument_id?depth=1&instrument_id={futures.Id}");
+
+            var response = await _httpClient.SendAsync(request);
+            var spotDef = Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.Content.ReadAsStream());
+            if (spotDef is null) throw new Exception("Issue loading futures from Deribit.");
+            return spotDef.result.Spot;
+        }
+
         public override double GetOptionPrice(Option option)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book_by_instrument_id?depth=1&instrument_id={option.Id}");
@@ -93,46 +100,36 @@ namespace OneXMM.Referential.Exchanges
             return spotDef.result.Spot;
         }
 
-        public override SortedDictionary<Option, double> GetOptionPrices(Pair pair)
+        public async override Task<double> GetOptionPriceAsync(Option option)
         {
-            var res = new SortedDictionary<Option, double>();
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/public/get_order_book_by_instrument_id?depth=1&instrument_id={option.Id}");
 
-            int reqId = _reqId++;
+            var response = await _httpClient.SendAsync(request);
+            var spotDef = Utils.ConvertJsonToObject<DeribitGetOrderBook>(response.Content.ReadAsStream());
+            if (spotDef is null) throw new Exception("Issue loading options from Deribit.");
+            return spotDef.result.Spot;
+        }
 
-            var undlSymbol = pair.GetSymbol(SymbolTypes.Spot, OneXMM.Exchanges.Deribit);
-            if (string.IsNullOrEmpty(undlSymbol)) undlSymbol = pair.GetSymbol(SymbolTypes.Index, OneXMM.Exchanges.Deribit);
-            if (string.IsNullOrEmpty(undlSymbol)) throw new NullReferenceException($"Deribit - No spot or index symbol for {pair.Symbol}.");
+        public override SortedList<DateTime, Dictionary<Option, double>> GetOptionPrices(SortedList<DateTime, IEnumerable<Option>> options)
+        {
+            var res = new SortedList<DateTime, Dictionary<Option, double>>();
+            foreach (var kv in options) res.Add(kv.Key, new Dictionary<Option, double>());
 
-            var cmd = $"{{\"method\":\"public/subscribe\",\"params\":{{\"channels\":[\"markprice.options.{undlSymbol}\"]}},\"jsonrpc\":\"2.0\",\"id\":{reqId}}}";
-            WebsocketSend(cmd);
+            var tasks = new List<Task>();
 
-            while (!_optionsReceived) Thread.Sleep(25);
-
-            cmd = $"{{\"method\":\"public/unsubscribe\",\"params\":{{\"channels\":[\"markprice.options.{undlSymbol}\"]}},\"jsonrpc\":\"2.0\",\"id\":{reqId}}}";
-            WebsocketSend(cmd);
-
-            _optionsReceived = false;
-
-            Parallel.ForEach(_options, opt => 
+            foreach (var kv in options)
             {
-                if (opt.mark_price == 0) return;
+                foreach (var option in kv.Value)
+                {
+                    var opt = option.Copy();
+                    tasks.Add(Task.Run(async () => {
+                        var optionPrice = await GetOptionPriceAsync(opt);
+                        lock (res[kv.Key]) res[kv.Key].TryAdd(opt, optionPrice);
+                    }));
+                }
+            }
 
-                var nameCmpts = opt.instrument_name.Split('-');
-
-                // If the option is a call, we exclude
-                // We only focus on Put options
-                if (nameCmpts[3].Equals("C")) return;
-
-                if (nameCmpts[1][1] < '0' || nameCmpts[1][1] > '9') nameCmpts[1] = "0" + nameCmpts[1];
-
-                var option = new Option(this,
-                    pair,
-                    OptionTypes.Put,
-                    Convert.ToDouble(nameCmpts[2]),
-                    ToExpiry(nameCmpts[1]));
-                
-                lock (res) res.Add(option, opt.mark_price);
-            });
+            Task.WaitAll(tasks.ToArray());
 
             return res;
         }

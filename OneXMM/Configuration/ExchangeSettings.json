@@ -1,4 +1,5 @@
 {
+  "MaxExpiry": 30,
   "Exchanges": {
     "Deribit": {
       "ExchangeName": "DERIBIT",
@@ -9,7 +10,20 @@
       // Cutoff is UTC time
       "Cutoff": "00H00",
       "UseUniversalTime": true,
-      "ExpiryFormat": "ddMMMyy"
+      "ExpiryFormat": "ddMMMyy",
+      "OptionsAreDiscounted": false,
+      "OptionsAreQuotedInBase": false
+    }
+  },
+  "DataFeeders": {
+    "CoinMarketCap": {
+      "RPCUri": "https://pro-api.coinmarketcap.com/v2/cryptocurrency/",
+      "APIKey": "c45d46bd-39b7-4f31-a8b6-634bf2c54c92",
+      // List of Pair ids
+      "DefaultQuotes": "0,1",
+      "ReferenceCurrency": "USD",
+      // Frequency in ms
+      "Frequency": 1000
     }
   }
 }

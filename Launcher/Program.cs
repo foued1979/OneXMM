@@ -1,10 +1,6 @@
 ﻿using Launcher;
 using Launcher.MenuFunctions;
-using OneXMM;
-using OneXMM.Factories;
 using OneXMM.Services;
-
-ExchangeServices.Init();
 
 while (true)
 {

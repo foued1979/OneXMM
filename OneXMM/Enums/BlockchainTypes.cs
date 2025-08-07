@@ -4,6 +4,7 @@ namespace OneXMM
 {
     public enum BlockchainTypes
     {
-        EthereumLike = 0
+        EthereumLike = 0,
+        SolanaLike
     }
 }

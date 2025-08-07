@@ -1,25 +1,26 @@
-﻿using System;
-using MathNet.Numerics.LinearAlgebra;
+﻿using Accord.Math.Decompositions;
+using System;
 
 namespace OneXMM.Pricing
 {
     public static class VolTools
     {
-        public static double FindVol(double[] atmVols, double[][] spotPrices, int interval)
+        public static double FindCorrelatedATMVol(double[] atmVols, double[][] spotPrices, int interval)
         {
             if (atmVols.Length != spotPrices.GetLength(0) - 1) throw new Exception("There should be 1 more array of prices for the asset to evaluate.");
             GetReturns(spotPrices, interval, out var S, out var R);
 
-            var reg = MathNet.Numerics.LinearRegression.MultipleRegression.Svd(S, R);
+            var svd = new SingularValueDecomposition(S);
+            var reg = svd.Solve(R);
 
             var res = 0.0;
             var errSq = 0.0;
 
-            for (int i = 0; i < R.Count; ++i)
+            for (int i = 0; i < R.Length; ++i)
             {
                 var err = 0.0;
 
-                for (int j = 0; j < S.ColumnCount; ++j)
+                for (int j = 0; j < S.GetLength(1); ++j)
                 {
                     err += S[i, j] * reg[j];
                 }
@@ -28,17 +29,17 @@ namespace OneXMM.Pricing
                 errSq += err * err;
             }
 
-            var std = Math.Sqrt(errSq) / (R.Count - 1);
+            var std = System.Math.Sqrt(errSq) / (R.Length - 1);
 
             for (int i = 0; i < reg.Count(); ++i)
             {
-                res += Math.Pow(atmVols[i] * reg[i], 2);
+                res += System.Math.Pow(atmVols[i] * reg[i], 2);
             }
 
-            return Math.Sqrt(res) + std;
+            return System.Math.Sqrt(res) + std;
         }
 
-        private static void GetReturns(double[][] prices, int interval, out Matrix<double> refReturns, out Vector<double> targetReturns)
+        private static void GetReturns(double[][] prices, int interval, out double[,] refReturns, out double[] targetReturns)
         {
             var tasks = new Task[prices.GetLength(0)];
             var returns = new double[prices.GetLength(0)][];
@@ -49,7 +50,7 @@ namespace OneXMM.Pricing
 
                 tasks[i] = Task.Run(() =>
                 {
-                    var size = Math.DivRem(prices[index].Length - 1, interval).Quotient;
+                    var size = System.Math.DivRem(prices[index].Length - 1, interval).Quotient;
                     var returnsForAsset = new double[size];
                     var cIndex = size - 1;
 

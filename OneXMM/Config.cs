@@ -30,6 +30,8 @@ namespace OneXMM
 
         public const int RatePrecision = 10000;
         public static NodeInfo NodeInfo { get; private set; }
+        public static double MaxEpiry => _settings.MaxEpiry;
+        public static DataSettings DataSettings { get; private set; }
 
         #endregion
 
@@ -40,6 +42,7 @@ namespace OneXMM
             _settings = SetSettings();
             _symbolMapping = SetSymbolMapping();
             _referential = SetReferential();
+            DataSettings = SetDataSettings();
             
             foreach (var pairDef in _referential.PairDefs)
             {
@@ -102,6 +105,7 @@ namespace OneXMM
         }
 
         public static ExchangeConfig GetExchangeConfig(Exchanges exchange) => _settings.Exchanges[exchange];
+        public static DataFeederConfig GetDataFeederConfig(DataFeeders dataFeeder) => _settings.DataFeeders[dataFeeder];
 
         public static Exchanges GetReferenceExchangeForPair(Pair pair)
         {
@@ -268,6 +272,16 @@ namespace OneXMM
                 ?? throw new Exception($"Config - No pair with symbol {pairSymbol}.");
         }
 
+        public static Pair GetPair(int pairId)
+        {
+            var pairDef = _referential.PairDefs.First(pd => pd.Id == pairId);
+            var coin = _referential.Coins.First(c => c.Id == pairDef.CoinId);
+            var counter = _referential.Coins.First(c => c.Id == pairDef.BaseId);
+
+            if (!_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.InternalSymbol}/{counter.InternalSymbol}.");
+            return new Pair(pairDef.Id, coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
+        }
+
         public static Pair GetPair(int coinId, int baseId, bool createPair)
         {
             if (createPair)
@@ -277,7 +291,7 @@ namespace OneXMM
                 var counter = _referential.Coins.First(c => c.Id == baseId);
                 if (!_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.InternalSymbol}/{counter.InternalSymbol}.");
 
-                return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
+                return new Pair(pairDef.Id, coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
             }
 
             return _poolUpdateCfg.Keys.Where(p => p.Coin.Id == coinId && p.Base.Id == baseId)?.First()
@@ -294,7 +308,7 @@ namespace OneXMM
                 var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coin.Id && pd.BaseId == counter.Id);
 
                 if (coin is null || counter is null || !_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coinSymbol}/{counterSymbol}.");
-                return new Pair(coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
+                return new Pair(pairDef.Id, coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
             }
 
             return _poolUpdateCfg.Keys.Where(p => p.Coin.InternalSymbol.Equals(coinSymbol, StringComparison.OrdinalIgnoreCase)
@@ -312,6 +326,12 @@ namespace OneXMM
         {
             var appPath = Environment.CurrentDirectory;
             return Utils.Utils.ConvertFileToObject<ExchangeSettings>(Path.Combine(appPath, "Configuration\\ExchangeSettings.json")) ?? throw new Exception("Config - Issue reading ExchangeSettings.");
+        }
+
+        private static DataSettings SetDataSettings()
+        {
+            var appPath = Environment.CurrentDirectory;
+            return Utils.Utils.ConvertFileToObject<DataSettings>(Path.Combine(appPath, "Configuration\\DataSettings.json")) ?? throw new Exception("Config - Issue reading DataSettings.");
         }
 
         private static Configuration.Referential SetReferential()

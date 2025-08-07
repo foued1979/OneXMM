@@ -2,23 +2,29 @@
 
 namespace OneXMM.Referential.Assets
 {
+    using OneXMM.Referential.DataFeeds;
+
     public sealed class Coin : IComparable<Coin>
     {
-        public int Id { get; }
+        public int Id { get; set; }
         public bool IsFiat => string.IsNullOrEmpty(Address);
         public bool IsNative => Address.Equals("0x");
-        public string ContractSymbol { get; } = "";
-        public string InternalSymbol { get; } = "";
-        public string Address { get; } = "";
-        public Blockchains Chain { get; } = Blockchains.Error;
+        public string ContractSymbol { get; set; } = "";
+        public string InternalSymbol { get; set; } = "";
+        public string Address { get; set; } = "";
+        public Blockchains Chain { get; set; } = Blockchains.Error;
+        public Dictionary<DataFeeders, DataFeedInfo> DataFeedInfo { get; set; } = new Dictionary<DataFeeders, DataFeedInfo>();
 
-        public Coin(int id, string contractSymbol, string internalSymbol, string address, Blockchains chain) 
+        public Coin() { }
+
+        public Coin(int id, string contractSymbol, string internalSymbol, string address, Blockchains chain, Dictionary<DataFeeders, DataFeedInfo> dataFeedInfo) 
         { 
             Id = id;
             ContractSymbol = contractSymbol;
             InternalSymbol = internalSymbol;
             Address = address;
             Chain = chain;
+            DataFeedInfo = dataFeedInfo;
         }
 
         public override bool Equals(object? obj)

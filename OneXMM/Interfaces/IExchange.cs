@@ -9,7 +9,7 @@ namespace OneXMM.Interfaces
     {
         string Name { get; }
 
-        bool QuoteInBase { get; }
+        bool IsQuotedInBase { get; }
 
         bool IsDiscounted { get; }
 
@@ -29,10 +29,16 @@ namespace OneXMM.Interfaces
 
         double GetSpot(Futures futures);
 
-        public double GetOptionPrice(Option option);
+        Task<double> GetSpotAsync(Futures futures);
+
+        double[] GetSpot(Futures[] futures);
+
+        double GetOptionPrice(Option option);
+
+        Task<double> GetOptionPriceAsync(Option option);
 
         double GetInterpolatedForward(DateTime maturity, SortedDictionary<DateTime, Futures> futures);
 
-        public SortedDictionary<Option, double> GetOptionPrices(Pair pair);
+        SortedList<DateTime, Dictionary<Option, double>> GetOptionPrices(SortedList<DateTime, IEnumerable<Option>> options);
     }
 }

@@ -4,6 +4,7 @@ namespace OneXMM.Configuration
 {
     public sealed class PairDef
     {
+        public int Id { get; set; } = -1;
         public int CoinId { get; set; } = -1;
         public int BaseId { get; set; } = -1;
         public Exchanges RefExchange { get; set; } = Exchanges.None;
