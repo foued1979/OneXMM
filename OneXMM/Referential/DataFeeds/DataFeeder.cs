@@ -113,7 +113,7 @@ namespace OneXMM.Referential.DataFeeds
                     continue;
                 }
 
-                if (coinValue is null) allQuotes.Add(new Quote(pair, 1m / baseValue!.Price));
+                if (coinValue is null) allQuotes.Add(new Quote(pair, 1.0 / baseValue!.Price));
                 else if (baseValue is null) allQuotes.Add(new Quote(pair, coinValue.Price));
                 else allQuotes.Add(new Quote(pair, coinValue.Price / baseValue.Price));
             }

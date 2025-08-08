@@ -53,5 +53,10 @@ namespace OneXMM.Pricing.Curves
             var expiry_dt = expiry + 1E-6;
             return ((1 + _interpolator.Interpolate(expiry_dt) * expiry_dt) / (1 + _interpolator.Interpolate(expiry) * expiry) - 1) * 1E6;
         }
+
+        public double GetForward(double spot, DateTime expiry)
+        {
+            return GetForward(spot, (expiry - CurveDate).TotalDays * Constants.OneOver365);
+        }
     }
 }

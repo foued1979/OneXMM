@@ -25,6 +25,6 @@ namespace OneXMM.Referential.DataFeeds.Responses
 
     internal struct QuoteDetails
     {
-        public decimal price { get; set; }
+        public double price { get; set; }
     }
 }

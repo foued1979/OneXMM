@@ -14,6 +14,6 @@ namespace OneXMM.Referential.DataFeeds.Responses
 
     internal struct Price
     {
-        public decimal price { get; set; }
+        public double price { get; set; }
     }
 }

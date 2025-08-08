@@ -3,14 +3,19 @@ using System.Runtime.CompilerServices;
 
 namespace OneXMM.Pricing.Smiles
 {
+    using Accord.Math.Optimization;
     using OneXMM;
     using OneXMM.Interfaces;
     using OneXMM.Referential;
 
     public sealed class SABR : ISmile
     {
+        private double _expiry;
+        private double _sqrtExp;
+
         public DateTime SmileDate { get; private set; }
         public DateTime SmileExpiry { get; }
+        public double Expiry => _expiry;
         
         public double Alpha { get; set; }
         public double Vega { get; set; }
@@ -26,6 +31,8 @@ namespace OneXMM.Pricing.Smiles
         {
             SmileDate = smileDate;
             SmileExpiry = smileExpiry;
+            _expiry = (smileExpiry - SmileDate).TotalDays * Constants.OneOver365;
+            _sqrtExp = System.Math.Sqrt(_expiry);
         }
 
         public void UpdateParameters(params double[] args)
@@ -44,6 +51,8 @@ namespace OneXMM.Pricing.Smiles
         public void UpdateSmileDate(DateTime smileDate)
         {
             SmileDate = smileDate;
+            _expiry = (SmileExpiry - smileDate).TotalDays * Constants.OneOver365;
+            _sqrtExp = System.Math.Sqrt(_expiry);
         }
 
         public void AddOption(Option option)
@@ -58,9 +67,8 @@ namespace OneXMM.Pricing.Smiles
             }
         }
 
-        public double GetVol(DateTime asof, double forward, double strike)
+        public double GetVol(double forward, double strike)
         {
-            var tenor = (SmileExpiry - asof).TotalDays * Constants.OneOver365;
             if (forward == 0 || strike == 0) return double.NaN;
 
             var ln = System.Math.Log(forward / strike);
@@ -74,13 +82,37 @@ namespace OneXMM.Pricing.Smiles
 
             var f3 = sigmaB * sigmaB / (24.0 * midSq) + 0.25 * Rho * Alpha * Vega * Beta / mid + (2 - 3 * Rho * Rho) * Vega * Vega / 24.0;
 
-            if (forward == strike) return Alpha / System.Math.Pow(forward, one_minus_beta) * (1 + f3 * tenor);
+            if (forward == strike) return Alpha / System.Math.Pow(forward, one_minus_beta) * (1 + f3 * _expiry);
 
             var f1 = 1 + lnbSq / 24.0 + lnbSq * lnbSq / 1920.0;
             var f2 = Alpha / (mid * f1);
             var e = eta(Alpha, Vega, mid, forward, strike);
 
-            return f2 * e / Xsi(Rho, e) * (1 + f3 * tenor);
+            return f2 * e / Xsi(Rho, e) * (1 + f3 * _expiry);
+        }
+
+        public double GetMoneyness(double forward, double strike)
+        {
+            return System.Math.Log(strike / forward) / (GetVol(forward, strike) * _sqrtExp);
+        }
+
+        public double GetVolFromMoneyness(double forward, double moneyness)
+        {
+            try
+            {
+                return GetVol(forward, GetStrikeFromMoneyness(forward, moneyness));
+            }
+            catch
+            {
+                return 10.0;
+            }
+        }
+
+        public double GetStrikeFromMoneyness(double forward, double moneyness)
+        {
+            var brent = new BrentSearch((strike) => System.Math.Log(strike / forward) / (GetVol(forward, strike) * _sqrtExp) - moneyness, -50, 50, 1E-8, 150);
+            if (!brent.FindRoot()) throw new Exception("SABR - Cannot find strike from moneyness.");
+            return brent.Solution;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

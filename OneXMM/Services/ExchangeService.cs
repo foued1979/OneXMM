@@ -367,27 +367,21 @@ namespace OneXMM.Services
         {
             var selectedStrike = allOptionsForExpiry.First();
             var minDist = System.Math.Abs(selectedStrike.Strike - futuresPrice);
+
+            var nbOptions = allOptionsForExpiry.Count();
             var atmIndex = 0;
 
-            for (int i = 1; i < allOptionsForExpiry.Count(); ++i)
+            for (int i = 1; i < nbOptions; ++i)
             {
                 var currentOption = allOptionsForExpiry.ElementAt(i);
                 var dist = System.Math.Abs(currentOption.Strike - futuresPrice);
                 if (dist < minDist) { minDist = dist; atmIndex = i; selectedStrike = currentOption; }
             }
 
-            if (atmIndex == 0) throw new Exception($"ExchangeService::GetFilteredOptions - Error with option selection for pair {pair.Symbol}, on exchange {exchange.Name}, for expiry {selectedStrike.Expiry.ToShortDateString()}.");
-            if (atmIndex == 1)
-            {
-                if (allOptionsForExpiry.Count() < 2) throw new Exception($"ExchangeService::GetFilteredOptions - Not enough options for pair {pair.Symbol}, on exchange {exchange.Name}, for expiry {selectedStrike.Expiry.ToShortDateString()}.");
-                return [allOptionsForExpiry.ElementAt(0), allOptionsForExpiry.ElementAt(1), allOptionsForExpiry.ElementAt(2)];
-            }
-            if (atmIndex == 2)
-            {
-                if (allOptionsForExpiry.Count() < 4) throw new Exception($"ExchangeService::GetFilteredOptions - Not enough options for pair {pair.Symbol}, on exchange {exchange.Name}, for expiry {selectedStrike.Expiry.ToShortDateString()}.");
-                if (allOptionsForExpiry.Count() == 4) return [allOptionsForExpiry.ElementAt(0), allOptionsForExpiry.ElementAt(1), allOptionsForExpiry.ElementAt(2), allOptionsForExpiry.ElementAt(3)];
-                else return [allOptionsForExpiry.ElementAt(0), allOptionsForExpiry.ElementAt(1), allOptionsForExpiry.ElementAt(2), allOptionsForExpiry.ElementAt(3), allOptionsForExpiry.ElementAt(4)];
-            }
+
+            // We need at least 5 options per expiry
+            // We need at least 2 options below ATM and 2 options above ATM
+            if (atmIndex < 2 || atmIndex > nbOptions - 3 || nbOptions < 5) throw new Exception($"ExchangeService::GetFilteredOptions - Not enough options for pair {pair.Symbol}, on exchange {exchange.Name}, for expiry {selectedStrike.Expiry.ToShortDateString()}.");
 
             var atm_m1 = (int)System.Math.Floor(0.5 * atmIndex);
             var atm_m2 = (int)System.Math.Floor(0.5 * atm_m1);

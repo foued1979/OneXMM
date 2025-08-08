@@ -9,8 +9,8 @@ namespace OneXMM.Interfaces
         DateTime SurfaceDate { get; }
         Pair Pair { get; }
 
-        double GetForward(double spot, DateTime asof, DateTime expiry);
+        double GetForward(double spot, DateTime expiry);
 
-        double GetVol(double forward, double strike, DateTime expiry);
+        double GetVol(double spot, double strike, DateTime expiry);
     }
 }

@@ -3,7 +3,7 @@
 namespace OneXMM.Communication.MySQLResults
 {
     using OneXMM.Interfaces;
-    using OneXMM.Pricing;
+    using OneXMM.Pricing.VolatilitySurfaces;
 
     public struct VolSurfaceResult
     {

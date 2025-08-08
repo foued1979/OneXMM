@@ -26,7 +26,7 @@ namespace OneXMM.Services
         {
             if (_volSurfaces.TryGetValue(pair, out var volSurface) && volSurface is not null)
             {
-                fwd = volSurface.GetForward(spot, volSurface.SurfaceDate, expiry);
+                fwd = volSurface.GetForward(spot, expiry);
                 vol = volSurface.GetVol(fwd, strike, expiry);
 
                 return;
@@ -39,7 +39,7 @@ namespace OneXMM.Services
         {
             if (_volSurfaces.TryGetValue(pair, out var volSurface) && volSurface is not null)
             {
-                var fwd = volSurface.GetForward(spot, volSurface.SurfaceDate, expiry);
+                var fwd = volSurface.GetForward(spot, expiry);
                 return volSurface.GetVol(fwd, strike, expiry);
             }
 

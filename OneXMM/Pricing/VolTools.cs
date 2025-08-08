@@ -1,35 +1,37 @@
 ﻿using Accord.Math.Decompositions;
+using OneXMM.Interfaces;
 using System;
+using System.Reflection;
 
 namespace OneXMM.Pricing
 {
     public static class VolTools
     {
-        public static double FindCorrelatedATMVol(double[] atmVols, double[][] spotPrices, int interval)
+        public static double FindCorrelatedATMVol(double[] atmVols, RollingPriceArray[] refSpotPrices, RollingPriceArray correlatedPrices, int frequency, int size)
         {
-            if (atmVols.Length != spotPrices.GetLength(0) - 1) throw new Exception("There should be 1 more array of prices for the asset to evaluate.");
-            GetReturns(spotPrices, interval, out var S, out var R);
+            if (atmVols.Length != refSpotPrices.Length) throw new Exception("There should be 1 more array of prices for the asset to evaluate.");
+            var svdArgs = GetReturns(refSpotPrices, correlatedPrices, frequency, size);
 
-            var svd = new SingularValueDecomposition(S);
-            var reg = svd.Solve(R);
+            var svd = new SingularValueDecomposition(svdArgs.Item1);
+            var reg = svd.Solve(svdArgs.Item2);
 
             var res = 0.0;
             var errSq = 0.0;
 
-            for (int i = 0; i < R.Length; ++i)
+            for (int i = 0; i < svdArgs.Item2.Length; ++i)
             {
                 var err = 0.0;
 
-                for (int j = 0; j < S.GetLength(1); ++j)
+                for (int j = 0; j < svdArgs.Item1.GetLength(1); ++j)
                 {
-                    err += S[i, j] * reg[j];
+                    err += svdArgs.Item1[i, j] * reg[j];
                 }
 
-                err -= R[i];
+                err -= svdArgs.Item2[i];
                 errSq += err * err;
             }
 
-            var std = System.Math.Sqrt(errSq) / (R.Length - 1);
+            var std = System.Math.Sqrt(errSq) / (svdArgs.Item2.Length - 1);
 
             for (int i = 0; i < reg.Count(); ++i)
             {
@@ -39,46 +41,44 @@ namespace OneXMM.Pricing
             return System.Math.Sqrt(res) + std;
         }
 
-        private static void GetReturns(double[][] prices, int interval, out double[,] refReturns, out double[] targetReturns)
+        public static ISmile ToSmile<TSmile>(this double[] pdf)
+            where TSmile : ISmile
         {
-            var tasks = new Task[prices.GetLength(0)];
-            var returns = new double[prices.GetLength(0)][];
 
-            for (int i = 0; i < tasks.Length; ++i)
+        }
+
+        private static (double[,], double[]) GetReturns(RollingPriceArray[] refPrices, RollingPriceArray correlatedPrices, int frequency, int size)
+        {
+            var n = refPrices.Length;
+
+            var tasks = new Task<double[]>[n + 1];
+            var refReturns = new double[size, n];
+
+            for (int i = 0; i < n; ++i)
             {
                 var index = i;
-
-                tasks[i] = Task.Run(() =>
-                {
-                    var size = System.Math.DivRem(prices[index].Length - 1, interval).Quotient;
-                    var returnsForAsset = new double[size];
-                    var cIndex = size - 1;
-
-                    for (int j = prices[index].Length - 1 - interval; j >= 0; j -= interval, --cIndex)
-                    {
-                        returnsForAsset[cIndex] = prices[index][j + interval] / prices[index][j] - 1.0;
-                    }
-
-                    returns[index] = returnsForAsset;
-                });
+                tasks[i] = Task.Run(() => refPrices[index].ExtractReturns(frequency, size));
             }
+
+            tasks[n] = Task.Run(() => correlatedPrices.ExtractReturns(frequency, size));
 
             Task.WaitAll(tasks);
 
-            var minSize = int.MaxValue;
-            for (int i = 0; i < tasks.Length; ++i) if (returns[i].Length < minSize) minSize = returns[i].Length;
-            for (int i = 0; i < tasks.Length; ++i)
+            for (int i = 0; i < n; ++i)
             {
-                if (returns[i].Length != minSize)
+                var index = i;
+                Task.Run(() =>
                 {
-                    var selectedReturns = new double[minSize];
-                    Array.Copy(returns[i], returns[i].Length - minSize, selectedReturns, 0, minSize);
-                    returns[i] = selectedReturns;
-                }
+                    var ret = tasks[index].Result;
+
+                    for (int j = 0; j < size; ++j)
+                    {
+                        refReturns[j, index] = ret[j];
+                    }
+                });
             }
 
-            refReturns = Matrix<double>.Build.DenseOfRows(returns.Take(prices.GetLength(0) - 1)).Transpose();
-            targetReturns = Vector<double>.Build.Dense(returns.Last());
+            return (refReturns, tasks[n].Result);
         }
     }
 }

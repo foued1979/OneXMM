@@ -48,7 +48,7 @@ namespace OneXMM.Referential
             if (Exchange.ExchangeUsesUniversalTime) asof = asof.ToUniversalTime();
 
             var expiry = (Expiry - volSurface.SurfaceDate).TotalDays * Constants.OneOver365;
-            var forward = volSurface.GetForward(spot, asof, Expiry);
+            var forward = volSurface.GetForward(spot, Expiry);
             var vol = volSurface.GetVol(forward, Strike, Expiry);
 
             var volSqrtT = vol * System.Math.Sqrt(expiry);
@@ -69,7 +69,7 @@ namespace OneXMM.Referential
             if (Exchange.ExchangeUsesUniversalTime) asof = asof.ToUniversalTime();
 
             var expiry = (Expiry - smile.SmileDate).TotalDays * Constants.OneOver365;
-            var vol = smile.GetVol(asof, forward, Strike);
+            var vol = smile.GetVol(forward, Strike);
 
             var volSqrtT = vol * System.Math.Sqrt(expiry);
             var d1 = System.Math.Log(forward / Strike) / volSqrtT + 0.5 * volSqrtT;
