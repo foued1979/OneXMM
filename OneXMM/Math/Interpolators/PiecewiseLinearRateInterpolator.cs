@@ -3,10 +3,10 @@
 namespace OneXMM.Math.Interpolators
 {
     using OneXMM.Interfaces;
+    using OneXMM.Math.Interpolators.Base;
     using OneXMM.Referential;
-    using Org.BouncyCastle.Bcpg.Sig;
 
-    public sealed class PiecewiseLinearRateInterpolator<TExtrapolatorDown, TExtrapolatorUp> : Interpolator
+    public sealed class PiecewiseLinearRateInterpolator<TExtrapolatorDown, TExtrapolatorUp> : RateInterpolator
         where TExtrapolatorDown : IRateExtrapolator, new()
         where TExtrapolatorUp : IRateExtrapolator, new()
     {
@@ -39,8 +39,8 @@ namespace OneXMM.Math.Interpolators
             }
 
             Set(tenors.ToArray(), rates.ToArray());
-            _extrapolatorDown.Set(X, Y, rateInterpolationType, ExtrapolatorTypes.Down);
-            _extrapolatorUp.Set(X, Y, rateInterpolationType, ExtrapolatorTypes.Up);
+            _extrapolatorDown.Set(Tenors, Rates, rateInterpolationType, ExtrapolatorTypes.Down);
+            _extrapolatorUp.Set(Tenors, Rates, rateInterpolationType, ExtrapolatorTypes.Up);
         }
 
         public PiecewiseLinearRateInterpolator(double[] tenors, double[] rates, RateInterpolationTypes rateInterpolationType) : this(rateInterpolationType)
@@ -49,8 +49,8 @@ namespace OneXMM.Math.Interpolators
             if (rates.Length < 2) throw new ArgumentException("PiecewiseLinearRateInterpolator - The interpolator requires at least 2 rates.");
 
             Set(tenors, rates);
-            _extrapolatorDown.Set(X, Y, rateInterpolationType, ExtrapolatorTypes.Down);
-            _extrapolatorUp.Set(X, Y, rateInterpolationType, ExtrapolatorTypes.Up);
+            _extrapolatorDown.Set(Tenors, Rates, rateInterpolationType, ExtrapolatorTypes.Down);
+            _extrapolatorUp.Set(Tenors, Rates, rateInterpolationType, ExtrapolatorTypes.Up);
         }
 
         public override void Set(double[] tenors, double[] rates, RateInterpolationTypes rateInterpolationType)
@@ -59,21 +59,21 @@ namespace OneXMM.Math.Interpolators
             _isOnFwd = (RateInterpolationType & RateInterpolationTypes.Forwards) != 0;
 
             Set(tenors, rates);
-            _extrapolatorDown.Set(X, Y, rateInterpolationType, ExtrapolatorTypes.Down);
-            _extrapolatorUp.Set(X, Y, rateInterpolationType, ExtrapolatorTypes.Up);
+            _extrapolatorDown.Set(Tenors, Rates, rateInterpolationType, ExtrapolatorTypes.Down);
+            _extrapolatorUp.Set(Tenors, Rates, rateInterpolationType, ExtrapolatorTypes.Up);
         }
 
         public unsafe override void Set(double[] tenors, double[] rates)
         {
-            X = tenors;
-            Y = rates;
+            Tenors = tenors;
+            Rates = rates;
 
             _slopes = new double[tenors.Length - 1];
             var isOnFwd = _isOnFwd;
 
             fixed (double* p_slope0 = &_slopes[0])
-            fixed (double* p_tenor0 = &X[0])
-            fixed (double* p_rate0 = &Y[0])
+            fixed (double* p_tenor0 = &Tenors[0])
+            fixed (double* p_rate0 = &Rates[0])
             {
                 double* p_slope = p_slope0;
                 double* p_rate = p_rate0;
@@ -101,12 +101,12 @@ namespace OneXMM.Math.Interpolators
 
         public override double Interpolate(double expiry)
         {
-            if (expiry < X.First()) return _extrapolatorDown.Extrapolate(expiry);
-            if (expiry > X.Last()) return _extrapolatorUp.Extrapolate(expiry);
+            if (expiry <= Tenors.First()) return _extrapolatorDown.Extrapolate(expiry);
+            if (expiry >= Tenors.Last()) return _extrapolatorUp.Extrapolate(expiry);
 
             int index = Locate(expiry);
 
-            var interp = Y[index] + _slopes[index] * (X[index + 1] -  X[index]);
+            var interp = Rates[index - 1] + _slopes[index - 1] * (expiry -  Tenors[index - 1]);
 
             if (_isOnFwd) return (interp - 1) / expiry;
             return interp;

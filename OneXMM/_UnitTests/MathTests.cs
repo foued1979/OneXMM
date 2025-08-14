@@ -1,7 +1,13 @@
-﻿using System;
-using NUnit.Framework;
+﻿using NUnit.Framework;
+using NUnit.Framework.Internal;
+using OneXMM.Interfaces;
+using OneXMM.Math.Distributions;
 using OneXMM.Math.Extrapolators;
 using OneXMM.Math.Interpolators;
+using OneXMM.Math.Models;
+using OneXMM.Pricing.Curves;
+using OneXMM.Pricing.Smiles;
+using System;
 
 namespace OneXMM._UnitTests
 {
@@ -18,6 +24,39 @@ namespace OneXMM._UnitTests
             Assert.That(interpolator.Interpolate(4), Is.EqualTo(4));
 
             Assert.That(interpolator.Interpolate(0.5), Is.EqualTo(1.5));
+        }
+
+        [Test]
+        public void CustomDistributionTest()
+        {
+            var smile = new SABR(DateTime.Today, DateTime.Today.AddDays(7));
+            smile.UpdateParameters(1.2, 0.32, 0.82, 0.15);
+
+            var custom = new CustomDistribution(100, smile);
+            var integral = new Accord.Math.Integration.NonAdaptiveGaussKronrod()
+            {
+                Function = new Func<double, double>((x) => custom.Pdf(x)),
+                Range = new Accord.DoubleRange(-8, 8),
+                ToleranceAbsolute = 1E-12,
+                ToleranceRelative = 1E-8
+            };
+
+            integral.Compute();
+        }
+
+        [Test]
+        public void FokkerPlanckTest()
+        {
+            var smile = new SABR(DateTime.Today, DateTime.Today.AddDays(7));
+            smile.UpdateParameters(1.2, 0.32, 0.82, 0.15);
+
+            var curve = new Curve<PiecewiseLinearRateInterpolator<FlatRateExtrapolator, LinearRateExtrapolator>>(DateTime.Today,
+                [0.0, 1.0 / 365, 7.0 / 365.0, 14.0 / 365],
+                [0.0, 0.06, 0.08, 0.09],
+                RateInterpolationTypes.Linear | RateInterpolationTypes.Forwards);
+
+            var fokkerPlanck = new FokkerPlanck(100, smile, curve, 2.0 / (365 * 24));
+            for (int i = 0; i < 6; ++i) fokkerPlanck.SolveOneStep();
         }
     }
 }

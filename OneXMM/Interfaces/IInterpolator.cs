@@ -2,13 +2,11 @@
 
 namespace OneXMM.Interfaces
 {
-    public interface IInterpolator
+    internal interface IInterpolator
     {
         double[] X { get; }
         double[] Y { get; }
-
-        void Set(double[] tenors, double[] rates);
-        void Set(double[] tenors, double[] rates, RateInterpolationTypes rateInterpolationType);
-        double Interpolate(double expiry);
+        void Set(double[] x, double[] y);
+        double Interpolate(double x);
     }
 }

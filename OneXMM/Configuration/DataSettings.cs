@@ -6,5 +6,6 @@ namespace OneXMM.Configuration
     {
         public DataFeeders[] Feeders { get; set; } = [];
         public Exchanges[] Exchanges { get; set; } = [];
+        public DatabaseInfo DatabaseInfo { get; set; }
     }
 }

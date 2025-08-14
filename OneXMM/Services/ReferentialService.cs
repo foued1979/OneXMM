@@ -7,6 +7,10 @@ namespace OneXMM.Services
 
     public static class ReferentialService
     {
+        #region Events
+        public static event EventHandler<Referential.DataFeeds.Quote> QuoteReceived;
+        #endregion
+
         public static Timer _refreshOptions;
         public static Pair[] Pairs => DataFeederService.Pairs;
 
@@ -63,7 +67,7 @@ namespace OneXMM.Services
 
         private static void DataFeederService_QuoteReceived(object? sender, Referential.DataFeeds.Quote e)
         {
-            throw new NotImplementedException();
+            QuoteReceived(null, e);
         }
 
         private static void DataFeederService_DataMissing(object? sender, ServiceEventArgs.DataMissingEventArgs e)

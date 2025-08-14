@@ -2,6 +2,8 @@
 
 namespace OneXMM.Math.Extrapolators
 {
+    using OneXMM.Math.Extrapolators.Base;
+
     public sealed class FlatRateExtrapolator : RateExtrapolator
     {
         private bool _isOnFwd;

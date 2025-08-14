@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text;
-using MySql.Data.MySqlClient;
 
 namespace OneXMM.Communication.MySQLRequests
 {
@@ -10,6 +9,8 @@ namespace OneXMM.Communication.MySQLRequests
     {
         public string Symbol { get; set; } = "";
         public DateTime? Date { get; set; }
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
 
         public GetHistoricalDataRequest(string tableName) : base(tableName) { }
 
@@ -37,8 +38,23 @@ namespace OneXMM.Communication.MySQLRequests
                 if (hasFilter) sb.Append($" AND date='{Date.Value.ToString(MySQLConnector.DatetimeFormat)}'");
                 else sb.Append($" WHERE date='{Date.Value.ToString(MySQLConnector.DatetimeFormat)}'");
             }
+            else
+            {
+                if (FromDate.HasValue)
+                {
+                    if (hasFilter) sb.Append($" AND date>='{FromDate.Value.ToString(MySQLConnector.DatetimeFormat)}'");
+                    else sb.Append($" WHERE date>='{FromDate.Value.ToString(MySQLConnector.DatetimeFormat)}'");
+                    hasFilter = true;
+                }
 
-            sb.Append(";");
+                if (ToDate.HasValue)
+                {
+                    if (hasFilter) sb.Append($" AND date<='{ToDate.Value.ToString(MySQLConnector.DatetimeFormat)}'");
+                    else sb.Append($" WHERE date<='{ToDate.Value.ToString(MySQLConnector.DatetimeFormat)}'");
+                }
+            }
+
+            sb.Append(';');
             return sb.ToString();
         }
     }

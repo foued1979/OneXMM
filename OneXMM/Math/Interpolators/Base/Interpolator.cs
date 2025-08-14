@@ -1,23 +1,20 @@
 ﻿using System;
 
-namespace OneXMM.Math.Interpolators
+namespace OneXMM.Math.Interpolators.Base
 {
+    using Accord.Statistics.Kernels;
     using OneXMM.Interfaces;
 
     public abstract class Interpolator : IInterpolator
     {
-
         public double[] X { get; protected set; } = [];
-        public double[] Y { get; protected set; } = [];
 
-        public abstract void Set(double[] tenors, double[] rates);
-        public abstract void Set(double[] tenors, double[] rates, RateInterpolationTypes rateInterpolationType);
-        public abstract double Interpolate(double expiry);
+        public double[] Y { get; protected set; } = [];
 
         protected int Locate(double tenor)
         {
             if (tenor < X.First() || tenor > X.Last()) return -1;
-            
+
             var index = 0;
 
             foreach (var t in X)
@@ -28,5 +25,9 @@ namespace OneXMM.Math.Interpolators
 
             return -1;
         }
+
+        public abstract double Interpolate(double x);
+
+        public abstract void Set(double[] x, double[] y);
     }
 }

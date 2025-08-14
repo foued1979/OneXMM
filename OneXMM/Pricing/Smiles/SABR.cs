@@ -110,9 +110,9 @@ namespace OneXMM.Pricing.Smiles
 
         public double GetStrikeFromMoneyness(double forward, double moneyness)
         {
-            var brent = new BrentSearch((strike) => System.Math.Log(strike / forward) / (GetVol(forward, strike) * _sqrtExp) - moneyness, -50, 50, 1E-8, 150);
+            var brent = new BrentSearch((x) => System.Math.Log(x) / (GetVol(forward, x * forward) * _sqrtExp) - moneyness, 0.0001, 10, 1E-8, 150);
             if (!brent.FindRoot()) throw new Exception("SABR - Cannot find strike from moneyness.");
-            return brent.Solution;
+            return brent.Solution * forward;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

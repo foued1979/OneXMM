@@ -1,4 +1,12 @@
 ﻿{
   "Feeders": [ "CoinMarketCap" ],
-  "Exchanges": [ "Deribit" ]
+  "Exchanges": [ "Deribit" ],
+  "DatabaseInfo": {
+    "TableMapping": {
+      "historical_prices": "historical_prices",
+      "futures_ref": "futures_ref",
+      "options_ref": "options_ref",
+      "vol_surfaces": "vol_surfaces"
+    }
+  }
 }

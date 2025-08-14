@@ -21,7 +21,7 @@ namespace OneXMM.Referential.DataFeeds
 
         public override async Task<OneXMM.Referential.DataFeeds.HistoricalQuotes> GetHistoricalQuotes(Coin coin, DateTime from, DateTime to)
         {
-            if (!coin.DataFeedInfo.ContainsKey(DataFeeders.CoinMarketCap)) return new HistoricalQuotes(coin, []);
+            if (!coin.DataFeedInfo.ContainsKey(DataFeeders.CoinMarketCap)) return new HistoricalQuotes(coin, Config.GetCoin("USD", null), []);
 
             var id = coin.DataFeedInfo[DataFeeders.CoinMarketCap].Id;
             var n = (int)(to - from).TotalDays + 1;
@@ -46,7 +46,7 @@ namespace OneXMM.Referential.DataFeeds
                 using (var reader = new JsonTextReader(stream))
                 {
                     var quote = new JsonSerializer().Deserialize<CoinMarketCapHistoricalQuote>(reader);
-                    return new HistoricalQuotes(coin, quote.data.quotes.Select(q => new HistoricalQuote(q.timestamp, q.quote[ReferenceCurrency].price)).ToArray());
+                    return new HistoricalQuotes(coin, Config.GetCoin("USD", null), quote.data.quotes.Select(q => new HistoricalQuote(q.timestamp, q.quote[ReferenceCurrency].price)).ToArray());
                 }
             }
         }

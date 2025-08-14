@@ -1,5 +1,6 @@
 ﻿using Accord.Math.Decompositions;
 using OneXMM.Interfaces;
+using OneXMM.Math.Tools;
 using System;
 using System.Reflection;
 
@@ -7,7 +8,7 @@ namespace OneXMM.Pricing
 {
     public static class VolTools
     {
-        public static double FindCorrelatedATMVol(double[] atmVols, RollingPriceArray[] refSpotPrices, RollingPriceArray correlatedPrices, int frequency, int size)
+        public static double FindCorrelatedATMVol(double[] atmVols, RollingPriceUpdate[] refSpotPrices, RollingPriceUpdate correlatedPrices, int frequency, int size)
         {
             if (atmVols.Length != refSpotPrices.Length) throw new Exception("There should be 1 more array of prices for the asset to evaluate.");
             var svdArgs = GetReturns(refSpotPrices, correlatedPrices, frequency, size);
@@ -41,13 +42,7 @@ namespace OneXMM.Pricing
             return System.Math.Sqrt(res) + std;
         }
 
-        public static ISmile ToSmile<TSmile>(this double[] pdf)
-            where TSmile : ISmile
-        {
-
-        }
-
-        private static (double[,], double[]) GetReturns(RollingPriceArray[] refPrices, RollingPriceArray correlatedPrices, int frequency, int size)
+        private static (double[,], double[]) GetReturns(RollingPriceUpdate[] refPrices, RollingPriceUpdate correlatedPrices, int frequency, int size)
         {
             var n = refPrices.Length;
 

@@ -6,7 +6,7 @@ namespace OneXMM.Pricing.Curves
     using OneXMM.Referential;
 
     public sealed class Curve<TInterpolator> : ICurve
-        where TInterpolator : IInterpolator, new()
+        where TInterpolator : IRateInterpolator, new()
     {
         public DateTime CurveDate { get; }
 

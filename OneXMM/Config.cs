@@ -104,6 +104,11 @@ namespace OneXMM
             ContractFactory.SetContractFactory(IsTestMode);
         }
 
+        public static string GetTableName(MySQLTables table)
+        {
+            if (DataSettings.DatabaseInfo.TableMapping.TryGetValue(table, out var tableName)) return tableName;
+            return string.Empty;
+        }
         public static ExchangeConfig GetExchangeConfig(Exchanges exchange) => _settings.Exchanges[exchange];
         public static DataFeederConfig GetDataFeederConfig(DataFeeders dataFeeder) => _settings.DataFeeders[dataFeeder];
 
@@ -266,10 +271,32 @@ namespace OneXMM
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Coin GetCoin(string symbol, Blockchains? chain)
+        {
+            return _referential.Coins.First(c => c.ContractSymbol.Equals(symbol) && chain.HasValue ? c.Chain == chain : c.IsFiat);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Coin GetCoin(int id)
+        {
+            return _referential.Coins.First(c => c.Id == id);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Pair GetPair(string pairSymbol, Blockchains chain)
         {
             return _poolUpdateCfg.Keys.First(p => p.Symbol.Equals(pairSymbol) && p.Chain == chain)
                 ?? throw new Exception($"Config - No pair with symbol {pairSymbol}.");
+        }
+
+        public static Pair GetPairFromFeederId(int id, DataFeeders feeder)
+        {
+            var coin = _referential.Coins.First(c => c.DataFeedInfo[feeder].Id == id);
+            var counter = _referential.Coins.First(c => c.ContractSymbol.Equals("USD") && c.IsFiat == true);
+            var pairDef = _referential.PairDefs.First(pd => pd.CoinId == coin.Id && pd.BaseId == counter.Id);
+
+            if (!_symbolMapping.Mapping.TryGetValue($"{coin.InternalSymbol}{Pair.SymbolSeparator}{counter.InternalSymbol}", out var exchangeSymbols)) throw new Exception($"Config - Coins are not defined for pair {coin.InternalSymbol}/{counter.InternalSymbol}.");
+            return new Pair(pairDef.Id, coin, counter, pairDef.CorrelatedVol, exchangeSymbols);
         }
 
         public static Pair GetPair(int pairId)

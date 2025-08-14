@@ -8,8 +8,9 @@ namespace OneXMM.Services
     using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;
     using OneXMM.Communication;
+    using OneXMM.Referential.DataFeeds;
 
-    internal static class MySQLServices
+    internal static class MySQLService
     {
         private readonly static IDBConnector _sqlConnector = Factory.CreateMySQLConnector();
 
@@ -17,6 +18,22 @@ namespace OneXMM.Services
         {
             _sqlConnector.InsertData(new InsertDataRequest(MySQLTables.historical_prices.ToString(),
                 [[quote.Symbol, quote.Timestamp.ToString(MySQLConnector.DatetimeFormat), quote.Value.ToString()]],
+                MySQLInsertTypes.None));
+        }
+
+        public static void InsertQuotes(HistoricalQuotes quotes)
+        {
+            var symbol = $"{quotes.Coin.ContractSymbol}{Pair.SymbolSeparator}{quotes.Base.ContractSymbol}";
+            string[][] dataToInsert = new string[quotes.Quotes.Length][];
+
+            for (int i = 0; i < quotes.Quotes.Length; ++i)
+            {
+                var quote = quotes.Quotes[i];
+                dataToInsert[i] = [symbol, quote.Timestamp.ToString(MySQLConnector.DatetimeFormat), quote.Price.ToString()];
+            }
+
+            _sqlConnector.InsertData(new InsertDataRequest(MySQLTables.historical_prices.ToString(),
+                dataToInsert,
                 MySQLInsertTypes.None));
         }
 

@@ -2,6 +2,8 @@
 
 namespace OneXMM.Math.Extrapolators
 {
+    using OneXMM.Math.Extrapolators.Base;
+
     public sealed class LinearRateExtrapolator : RateExtrapolator
     {
         private double _xRef;
@@ -19,6 +21,8 @@ namespace OneXMM.Math.Extrapolators
 
         public override void Set(double[] x, double[] y, RateInterpolationTypes rateInterpolationType, ExtrapolatorTypes extrapolatorType)
         {
+            if (x.Length < 2 || y.Length != x.Length) throw new Exception("LinearRateExtrapolator - Data is not consistent.");
+
             _isOnFwd = (rateInterpolationType & RateInterpolationTypes.Forwards) != 0;
 
             if (extrapolatorType == ExtrapolatorTypes.Down)
