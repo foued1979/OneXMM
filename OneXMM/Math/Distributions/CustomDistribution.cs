@@ -1,106 +1,149 @@
 ﻿using Accord.Statistics.Distributions.Univariate;
+using MathNet.Numerics.Interpolation;
 using System;
+using System.Threading.Tasks;
 
 namespace OneXMM.Math.Distributions
 {
     using OneXMM.Interfaces;
     using OneXMM.Math.Extrapolators;
-    using OneXMM.Math.Interpolators;
-    using System.Threading.Tasks;
+    using OneXMM.Math.Tools;
+    using System.Net.WebSockets;
 
     public sealed class CustomDistribution
     {
-        private static readonly double[] _p = [1E-16, 1E-12, 1E-8, 1E-4, 0.01, 0.05, 0.1, 0.125, 0.15, 0.175, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.3125, 0.325, 0.3375, 0.35, 0.3625, 0.375, 0.3875, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.455, 0.46, 0.465, 0.47, 0.475, 0.48, 0.485, 0.49, 0.495, 0.5 ];
+        private const int N = 100;
+        private const double EPSILON = 1E-6;
+
         private readonly double[] _x;
         private double[] _pdf;
-        private PiecewiseLinearInterpolator<ZeroExtrapolator, ZeroExtrapolator> _interpolator;
+        private Interpolators.PiecewiseLinearInterpolator<ZeroExtrapolator, ZeroExtrapolator> _interpolator;
+        private readonly double _fwd;
 
         public double[] X => _x;
         public double[] PDF => _pdf;
+        public double[] SubX => new double[13] { _x[7], _x[17], _x[22], _x[27], _x[32], _x[37], _x[40], _x[43], _x[48], _x[53], _x[58], _x[63], _x[73] };
+
 
         public CustomDistribution(double forward, ISmile smile)
         {
-            _x = new double[_p.Length * 2 - 1];
-            _pdf = new double[_x.Length];
-
-            for (int i = 0; i < _p.Length; i++)
-            {
-                _x[i] = NormalDistribution.Standard.InverseDistributionFunction(_p[i]);
-                if (i < _p.Length - 1) _x[2 * (_p.Length - 1) - i] = -_x[i];
-            }
+            _fwd = forward;
 
             var sqrtT = System.Math.Sqrt(smile.Expiry);
             var atmVol = smile.GetVol(forward, forward);
+            var vol_sqrtT = atmVol * sqrtT;
             var atmVar = 0.5 * atmVol * atmVol * smile.Expiry;
-            var bump = forward * 1E-4;
 
-            var tasks = new Task[_x.Length];
+            _x = new double[N];
+            _pdf = new double[N];
 
-            for (int i = 0; i < _x.Length; i++)
+            var L = NormalDistribution.Standard.InverseDistributionFunction(1 - EPSILON) * vol_sqrtT;
+            var min = -L - 0.5 * vol_sqrtT * vol_sqrtT;
+            var max = L - 0.5 * vol_sqrtT * vol_sqrtT;
+            var dx = (max - min) / (N - 1);
+
+            var tasks = new Task[N];
+
+            for (int i = 0; i < N; i++)
             {
                 var index = i;
 
                 tasks[i] = Task.Run(() =>
                 {
-                    double strike = forward * System.Math.Exp(_x[index] * atmVol * sqrtT - atmVar);
-                    var volGuess = smile.GetVol(forward, strike);
-                    strike = forward * System.Math.Exp(_x[index] * volGuess * sqrtT - 0.5 * volGuess * volGuess * smile.Expiry);
+                    _x[index] = min + index * dx;
+                    double strike = forward * System.Math.Exp(_x[index]);
 
-                    _x[index] = smile.GetMoneyness(forward, strike);
+                    var bump = strike * (System.Math.Exp(1E-4) - 1.0);
+                    var one_over_bumpSq = 1.0 / (bump * bump);
 
                     var strikeUp = strike + bump;
-                    var strikeDown = System.Math.Max(0.0, strike - bump);
+                    var strikeDown = strike - bump;
 
+                    var pUp2 = CallPrice(forward, strikeUp + bump, smile.GetVol(forward, strikeUp + bump), sqrtT);
                     var pUp = CallPrice(forward, strikeUp, smile.GetVol(forward, strikeUp), sqrtT);
                     var p = CallPrice(forward, strike, smile.GetVol(forward, strike), sqrtT);
                     var pDown = CallPrice(forward, strikeDown, smile.GetVol(forward, strikeDown), sqrtT);
+                    var pDown2 = CallPrice(forward, strikeDown - bump, smile.GetVol(forward, strikeDown - bump), sqrtT);
 
-                    _pdf[index] = (pUp + pDown - 2 * p) / (bump * bump);
-
-                    if (_pdf[index] < 0)
-                    {
-                        if (index == 0 || index == _x.Length - 1)
-                        {
-                            _pdf[index] = 0;
-                        }
-                        else
-                        {
-                            _pdf[index] = 0.5 * (_pdf[index + 1] + _pdf[index - 1]);
-                        }
-                    }
+                    _pdf[index] = strike * (pUp + pDown - 2 * p) * one_over_bumpSq;
                 });
             }
 
             Task.WaitAll(tasks);
 
             Norm(_x, ref _pdf);
-            _interpolator = new PiecewiseLinearInterpolator<ZeroExtrapolator, ZeroExtrapolator>(_x, _pdf);
-        }
 
-        public void Rebase(out ISmile newSmile)
-        {
-
+            _interpolator = new Interpolators.PiecewiseLinearInterpolator<ZeroExtrapolator, ZeroExtrapolator>(_x, _pdf);
         }
 
         private static void Norm(double[] d, ref double[] pdf)
         {
-            var interpolator = new PiecewiseLinearInterpolator<ZeroExtrapolator, ZeroExtrapolator>(d, pdf);
-            var integral = new Accord.Math.Integration.NonAdaptiveGaussKronrod()
-            {
-                Function = new Func<double, double>((x) => interpolator.Interpolate(x)),
-                Range = new Accord.DoubleRange(0.9 * d.First(), 1.1 * d.Last()),
-                ToleranceAbsolute = 1E-12,
-                ToleranceRelative = 1E-8
-            };
+            var interpolator = CubicSpline.InterpolateNatural(d, pdf);
+            var area = MathNet.Numerics.Integration.GaussKronrodRule.Integrate((x) => interpolator.Interpolate(x), d.First(), d.Last(), out var err, out var norm);
 
-            integral.Compute();
-
-            for (int i = 0; i < pdf.Length; i++) pdf[i] /= integral.Area;
+            for (int i = 0; i < pdf.Length; i++) pdf[i] /= area;
         }
 
-        public double Pdf(double x) => _interpolator.Interpolate(x);
+        /// <summary>
+        /// Gets the density in Ln{K/F).
+        /// </summary>
+        /// <param name="x">The moneyness, equal to Ln(F/K).</param>
+        public double Pdf(double k) => _interpolator.Interpolate(k);
 
-        private Func<double, double, double, double, double> CallPrice = (forward, strike, vol, sqrtT) =>
+        public double dPdk(double k)
+        {
+            var index = 0;
+            if (k >= _x.Last()) index = N - 1;
+            else index = Locate(k);
+
+            if (k.IsCloseTo(_x[index])) return _dpdk(index);
+
+            var prop = (k - _x[index]) / (_x[index + 1] - _x[index]);
+            return (1 - prop) * _dpdk(index) + prop * _dpdk(index + 1);
+        }
+
+        public double d2Pdk2(double k)
+        {
+            var index = 0;
+            if (k >= _x.Last()) index = N - 1;
+            else index = Locate(k);
+
+            if (k.IsCloseTo(_x[index])) return _d2pdk2(index);
+            var prop = (k - _x[index]) / (_x[index + 1] - _x[index]);
+            return (1 - prop) * _d2pdk2(index) + prop * _d2pdk2(index + 1);
+        }
+
+        private int Locate(double k)
+        {
+            var index = 1;
+            while (k > _x[index]) index++;
+            return index;
+        }
+
+        private double _dpdk(int index)
+        {
+            if (index == 0) return (-25 * _pdf[0] + 48 * _pdf[1] - 36 * _pdf[2] + 16 * _pdf[3] - 3 * _pdf[4]) / (12.0 * (_x[1] - _x[0]));
+            if (index == 1) return (-25 * _pdf[1] + 48 * _pdf[2] - 36 * _pdf[3] + 16 * _pdf[4] - 3 * _pdf[5]) / (12.0 * (_x[1] - _x[0]));
+            if (index == N - 2) return (25 * _pdf[N - 2] - 48 * _pdf[N - 3] + 36 * _pdf[N - 4] - 16 * _pdf[N - 5] + 3 * _pdf[N - 6]) / (12.0 * (_x[N - 1] - _x[N - 2]));
+            if (index == N - 1) return (25 * _pdf[N - 1] - 48 * _pdf[N - 2] + 36 * _pdf[N - 3] - 16 * _pdf[N - 4] + 3 * _pdf[N - 5]) / (12.0 * (_x[N - 1] - _x[N - 2]));
+
+            return (-_pdf[index + 2] + 8 * _pdf[index + 1] - 8 * _pdf[index - 1] + _pdf[index - 2]) / (12.0 * (_x[index + 1] - _x[index]));
+        }
+
+        private double _d2pdk2(int index)
+        {
+            var dk = 0.0;
+
+            if (index == 0) { dk = _x[1] - _x[0]; return (35 * _pdf[0] - 104 * _pdf[1] + 114 * _pdf[2] - 56 * _pdf[3] + 11 * _pdf[4]) / (12 * dk * dk); }
+            if (index == 1) { dk = _x[1] - _x[0]; return (35 * _pdf[1] - 104 * _pdf[2] + 114 * _pdf[3] - 56 * _pdf[4] + 11 * _pdf[5]) / (12 * dk * dk); }
+            if (index == N - 2) { dk = _x[N - 1] - _x[N - 2]; return (35 * _pdf[N - 2] - 104 * _pdf[N - 3] + 114 * _pdf[N - 4] - 56 * _pdf[N - 5] + 11 * _pdf[N - 6]) / (12 * dk * dk); }
+            if (index == N - 1) { dk = _x[N - 1] - _x[N - 2]; return (35 * _pdf[N - 1] - 104 * _pdf[N - 2] + 114 * _pdf[N - 3] - 56 * _pdf[N - 4] + 11 * _pdf[N - 5]) / (12 * dk * dk); }
+
+            dk = _x[index + 1] - _x[index];
+            return (-_pdf[index + 2] + 16 * _pdf[index + 1] - 30 * _pdf[index] + 16 * _pdf[index - 1] - _pdf[index - 2]) / (12 * dk * dk);
+        }
+
+        private static Func<double, double, double, double, double> CallPrice = (forward, strike, vol, sqrtT) =>
         {
             var volSqrtT = vol * sqrtT;
             var d1 = System.Math.Log(forward / strike) / volSqrtT + 0.5 * volSqrtT;

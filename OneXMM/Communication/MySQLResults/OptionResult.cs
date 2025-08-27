@@ -3,8 +3,8 @@
 namespace OneXMM.Communication.MySQLResults
 {
     using OneXMM.Referential.Assets;
-    using OneXMM.Referential;
     using OneXMM.Referential.Exchanges;
+    using OneXMM.Pricing;
 
     public struct OptionResult
     {

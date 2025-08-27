@@ -1,7 +1,8 @@
 ﻿using System;
 
-namespace OneXMM.Referential
+namespace OneXMM.Pricing
 {
+    using OneXMM;
     using OneXMM.Communication;
     using OneXMM.Interfaces;
     using OneXMM.Referential.Assets;
@@ -11,24 +12,24 @@ namespace OneXMM.Referential
         public int Id { get; set; }
         public IExchange Exchange { get; set; }
         public string Symbol { get; set; }
-        public Assets.Pair Pair { get; set; }
+        public Pair Pair { get; set; }
         public OptionTypes OptionType { get; set; }
         public double Strike { get; }
         public DateTime Expiry { get; }
         public bool IsDiscounted { get; }
         public bool IsQuotedInBase { get; }
 
-        public Option(IExchange exchange, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
+        public Option(IExchange exchange, Pair pair, OptionTypes optionType, double strike, DateTime expiry)
             : this(exchange, CreateSymbol(pair, optionType, expiry, strike, exchange), pair, optionType, strike, expiry)
         { }
 
-        public Option(IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
+        public Option(IExchange exchange, string symbol, Pair pair, OptionTypes optionType, double strike, DateTime expiry)
             : this(symbol.GetHashCode(), exchange, symbol, pair, optionType, strike, expiry) { }
 
-        public Option(int id, IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, string expiry)
+        public Option(int id, IExchange exchange, string symbol, Pair pair, OptionTypes optionType, double strike, string expiry)
             : this(id, exchange, symbol, pair, optionType, strike, exchange.ToExpiry(expiry)) { }
 
-        public Option(int id, IExchange exchange, string symbol, Assets.Pair pair, OptionTypes optionType, double strike, DateTime expiry)
+        public Option(int id, IExchange exchange, string symbol, Pair pair, OptionTypes optionType, double strike, DateTime expiry)
         {
             Id = id;
             Exchange = exchange;

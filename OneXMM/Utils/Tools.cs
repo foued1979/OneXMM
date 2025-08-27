@@ -6,8 +6,8 @@ namespace OneXMM.Utils
     using Nethereum.RPC.Eth.DTOs;
     using OneXMM.Attributes;
     using OneXMM.Communication;
-    using OneXMM.Pricing.Smiles;
-    using OneXMM.Referential;
+    using OneXMM.Math.Models.Smiles;
+    using OneXMM.Pricing;
     using Org.BouncyCastle.Tls;
 
     public static class Tools

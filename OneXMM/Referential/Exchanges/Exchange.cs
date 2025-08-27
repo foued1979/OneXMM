@@ -4,6 +4,7 @@ namespace OneXMM.Referential.Exchanges
 {
     using OneXMM.Configuration;
     using OneXMM.Interfaces;
+    using OneXMM.Pricing;
     using OneXMM.Referential.Assets;
     using OneXMM.Utils;
     using System.Net.WebSockets;

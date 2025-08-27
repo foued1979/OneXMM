@@ -2,7 +2,7 @@
 
 namespace OneXMM.Interfaces
 {
-    using OneXMM.Referential;
+    using OneXMM.Pricing;
     using OneXMM.Referential.Assets;
 
     public interface IExchange

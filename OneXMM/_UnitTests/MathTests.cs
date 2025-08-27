@@ -5,8 +5,8 @@ using OneXMM.Math.Distributions;
 using OneXMM.Math.Extrapolators;
 using OneXMM.Math.Interpolators;
 using OneXMM.Math.Models;
+using OneXMM.Math.Models.Smiles;
 using OneXMM.Pricing.Curves;
-using OneXMM.Pricing.Smiles;
 using System;
 
 namespace OneXMM._UnitTests
@@ -55,7 +55,7 @@ namespace OneXMM._UnitTests
                 [0.0, 0.06, 0.08, 0.09],
                 RateInterpolationTypes.Linear | RateInterpolationTypes.Forwards);
 
-            var fokkerPlanck = new FokkerPlanck(100, smile, curve, 2.0 / (365 * 24));
+            var fokkerPlanck = new FokkerPlanck(100, smile, curve, 1.0 / (365 * 24));
             for (int i = 0; i < 6; ++i) fokkerPlanck.SolveOneStep();
         }
     }

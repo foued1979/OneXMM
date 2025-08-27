@@ -3,6 +3,7 @@ using System.Text;
 
 namespace OneXMM.Referential.Exchanges
 {
+    using OneXMM.Pricing;
     using OneXMM.Referential.Assets;
     using OneXMM.Referential.Exchanges.Requests;
     using OneXMM.Referential.Exchanges.Responses;

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OneXMM.Pricing.Smiles
+namespace OneXMM.Math.Models.Smiles
 {
     using OneXMM.Interfaces;
 

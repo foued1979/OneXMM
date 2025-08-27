@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-namespace OneXMM.Pricing.Smiles
+namespace OneXMM.Math.Models.Smiles
 {
     using Accord.Math.Optimization;
     using OneXMM;
     using OneXMM.Interfaces;
-    using OneXMM.Referential;
+    using OneXMM.Pricing;
 
     public sealed class SABR : ISmile
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OneXMM.Referential
+namespace OneXMM.Pricing
 {
     using OneXMM.Communication;
     using OneXMM.Interfaces;

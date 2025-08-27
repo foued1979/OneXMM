@@ -2,7 +2,7 @@
 
 namespace OneXMM.Interfaces
 {
-    using OneXMM.Referential;
+    using OneXMM.Pricing;
 
     public interface ISmile
     {

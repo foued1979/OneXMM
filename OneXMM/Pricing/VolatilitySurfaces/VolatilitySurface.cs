@@ -10,9 +10,9 @@ namespace OneXMM.Pricing.VolatilitySurfaces
     using OneXMM.Math.Interpolators;
     using OneXMM.Math.Optimizers;
     using OneXMM.Pricing.Curves;
-    using OneXMM.Pricing.Smiles;
-    using OneXMM.Referential;
     using OneXMM.Referential.Assets;
+    using OneXMM.Math.Models.Smiles;
+    using OneXMM.Pricing;
 
     public sealed class VolatilitySurface : IVolatilitySurface
     {

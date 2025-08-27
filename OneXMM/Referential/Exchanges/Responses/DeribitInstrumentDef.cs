@@ -1,4 +1,5 @@
 ﻿using System;
+using OneXMM.Pricing;
 using OneXMM.Services;
 
 namespace OneXMM.Referential.Exchanges.Responses

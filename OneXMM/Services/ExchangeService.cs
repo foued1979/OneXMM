@@ -6,7 +6,7 @@ namespace OneXMM.Services
     using OneXMM.Communication;
     using OneXMM.Communication.MySQLRequests;
     using OneXMM.Interfaces;
-    using OneXMM.Referential;
+    using OneXMM.Pricing;
     using OneXMM.Referential.Assets;
     using OneXMM.Referential.DataFeeds;
     using OneXMM.Referential.Exchanges;

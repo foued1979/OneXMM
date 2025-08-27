@@ -3,7 +3,7 @@
 namespace OneXMM.Pricing.Curves
 {
     using OneXMM.Interfaces;
-    using OneXMM.Referential;
+    using OneXMM.Pricing;
 
     public sealed class Curve<TInterpolator> : ICurve
         where TInterpolator : IRateInterpolator, new()

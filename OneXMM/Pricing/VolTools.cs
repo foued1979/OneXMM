@@ -1,8 +1,6 @@
 ﻿using Accord.Math.Decompositions;
-using OneXMM.Interfaces;
 using OneXMM.Math.Tools;
 using System;
-using System.Reflection;
 
 namespace OneXMM.Pricing
 {

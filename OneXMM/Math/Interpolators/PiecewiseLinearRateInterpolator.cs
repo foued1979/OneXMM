@@ -4,7 +4,7 @@ namespace OneXMM.Math.Interpolators
 {
     using OneXMM.Interfaces;
     using OneXMM.Math.Interpolators.Base;
-    using OneXMM.Referential;
+    using OneXMM.Pricing;
 
     public sealed class PiecewiseLinearRateInterpolator<TExtrapolatorDown, TExtrapolatorUp> : RateInterpolator
         where TExtrapolatorDown : IRateExtrapolator, new()
@@ -79,6 +79,8 @@ namespace OneXMM.Math.Interpolators
                 double* p_rate = p_rate0;
                 double* p_tenor = p_tenor0;
 
+                *p_rate = 1 + *p_rate * *p_tenor;
+
                 for (int i = 0; i < _slopes.Length; ++i)
                 {
                     double* next_p_rate = p_rate + 1;
@@ -86,7 +88,6 @@ namespace OneXMM.Math.Interpolators
 
                     if (isOnFwd)
                     {
-                        *p_rate = 1 + *p_rate * *p_tenor;
                         *next_p_rate = 1 + *next_p_rate * *next_p_tenor;
                     }
 
