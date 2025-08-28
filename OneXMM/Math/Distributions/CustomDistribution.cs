@@ -7,13 +7,13 @@ namespace OneXMM.Math.Distributions
 {
     using OneXMM.Interfaces;
     using OneXMM.Math.Extrapolators;
-    using OneXMM.Math.Tools;
-    using System.Net.WebSockets;
 
     public sealed class CustomDistribution
     {
         private const int N = 100;
         private const double EPSILON = 1E-6;
+        private static readonly int[] _subXIndices;
+        private double[] _subX = [];
 
         private readonly double[] _x;
         private double[] _pdf;
@@ -22,8 +22,57 @@ namespace OneXMM.Math.Distributions
 
         public double[] X => _x;
         public double[] PDF => _pdf;
-        public double[] SubX => new double[13] { _x[7], _x[17], _x[22], _x[27], _x[32], _x[37], _x[40], _x[43], _x[48], _x[53], _x[58], _x[63], _x[73] };
+        public double[] SubX
+        {
+            get
+            {
+                if (_subX.Length == 0)
+                {
+                    _subX = new double[_subXIndices.Length];
+                    for (int i = 0; i < _subXIndices.Length; ++i)
+                    {
+                        _subX[i] = _x[_subXIndices[i]];
+                    }
+                }
+                
+                return _subX;
+            }
+        }
 
+        static CustomDistribution()
+        {
+            var i0 = (N - 1) / 2;
+
+            if (N % 2 == 0)
+            {
+                var di = (i0 - 1) / 4;
+                var i0_1 = i0 + 1;
+
+                _subXIndices = new int[8];
+                
+                for (int i = 0; i < 3; i++)
+                {
+                    _subXIndices[i] = i0 - (3 - i) * di;
+                    _subXIndices[i + 5] = i0_1 + (i + 1) * di;
+                }
+
+                _subXIndices[3] = i0;
+                _subXIndices[4] = i0_1;
+            }
+            else
+            {
+                _subXIndices = new int[7];
+
+                var di = (i0 - 1) / 4;
+                for (int i = 0; i < 3; i++)
+                {
+                    _subXIndices[i] = i0 - (3 - i) * di;
+                    _subXIndices[i + 4] = i0 + (i + 1) * di;
+                }
+
+                _subXIndices[3] = i0;
+            }
+        }
 
         public CustomDistribution(double forward, ISmile smile)
         {

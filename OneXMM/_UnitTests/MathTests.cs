@@ -56,7 +56,10 @@ namespace OneXMM._UnitTests
                 RateInterpolationTypes.Linear | RateInterpolationTypes.Forwards);
 
             var fokkerPlanck = new FokkerPlanck(100, smile, curve, 1.0 / (365 * 24));
-            for (int i = 0; i < 6; ++i) fokkerPlanck.SolveOneStep();
+            for (int i = 0; i < 24; ++i)
+            {
+                fokkerPlanck.SolveOneStep();
+            }
         }
     }
 }

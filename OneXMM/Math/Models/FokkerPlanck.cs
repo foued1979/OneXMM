@@ -16,9 +16,10 @@ namespace OneXMM.Math.Models
         private static readonly double one_over_dVolSq = one_over_dVol * one_over_dVol;
 
         private readonly double _spot;
-        private ISmile _smile;
         private readonly ICurve _curve;
-        private readonly CustomDistribution _customDistribution;
+
+        private ISmile _smile;
+        private CustomDistribution _customDistribution;
 
         private double _expiry;
         private readonly double _dt;
@@ -45,7 +46,7 @@ namespace OneXMM.Math.Models
             var one_over_fwd = 1.0 / fwd;
             var atm = _smile.GetVol(fwd, fwd);
             var pdfs = _customDistribution.PDF;
-            var dq = new double[_customDistribution.X.Length];
+            var dp = new double[_customDistribution.X.Length];
 
             for (int i = 0; i < _customDistribution.X.Length; i++)
             {
@@ -53,8 +54,8 @@ namespace OneXMM.Math.Models
 
                 tasks[i] = Task.Run(() =>
                 {
-                    var k = _customDistribution.X[i];
-                    var pdf = pdfs[i];
+                    var k = _customDistribution.X[index];
+                    var pdf = pdfs[index];
 
                     var strike = fwd * System.Math.Exp(k);
                     var dk = 1.0E-4;
@@ -69,26 +70,29 @@ namespace OneXMM.Math.Models
                     var dsdx = 0.5 * (volUp - volDown) / dk;
                     var d2sdx2 = (volUp + volDown - 2.0 * vol) / (dk * dk);
 
-                    var mu = 0;//_curve.GetInstantaneousForwardYield(_expiry) - 0.5 * vol * vol;
+                    var mu = 0;// _curve.GetInstantaneousForwardYield(_expiry) - 0.5 * vol * vol;
                     var dmupdK = -mu * dpdx;
                     var d2 = 0.5 * vol * vol * d2pdx2 + vol * dsdx * dpdx + 0.5 * (dsdx * dsdx + vol * d2sdx2) * pdf;
 
-                    var tmp = (dmupdK + d2) * _dt;
-                    dq[index] = tmp;
+                    dp[index] = (dmupdK + d2) * _dt;
                 });
             }
 
             Task.WaitAll(tasks);
 
-            var interpolator = new PiecewiseLinearInterpolator<FlatExtrapolator, FlatExtrapolator>(_customDistribution.X, dq);
+            var interpolator = new PiecewiseLinearInterpolator<FlatExtrapolator, FlatExtrapolator>(_customDistribution.X, dp);
             var newVolPoints = ComputeVolPoints(fwd, interpolator);
 
             _expiry += _dt;
+            _smile = new SABR(_smile.SmileDate, _smile.SmileExpiry.AddDays(_dt * 365));
 
-            ISmile newSmile = new SABR(_smile.SmileDate, _smile.SmileExpiry.AddDays(_dt * 365));
             var newFwd = _curve.GetForward(_spot, _expiry);
+            var success = SmileOptimizer.CalibrateSmile(newFwd, ref _smile, newVolPoints.Select(p => new SmileOptimizer.CallOption(newFwd, p.Strike, p.Volatility, _expiry)).ToArray());
 
-            var success = SmileOptimizer.CalibrateSmile(newFwd, ref newSmile, newVolPoints.Select(p => new SmileOptimizer.CallOption(newFwd, p.Strike, p.Volatility, _expiry)).ToArray());
+            if (success)
+            {
+                _customDistribution = new CustomDistribution(newFwd, _smile);
+            } else throw new Exception();
         }
 
         private VolPoint[] ComputeVolPoints(double fwd, IInterpolator interpolator)
@@ -99,41 +103,25 @@ namespace OneXMM.Math.Models
             for (int i = 0; i < _customDistribution.SubX.Length; ++i)
             {
                 var index = i;
-                var k = _customDistribution.SubX[index];
-                var strike = fwd * System.Math.Exp(k);
-                var volatility = _smile.GetVol(fwd, strike);
 
-                var callUp = SmileOptimizer.CallPrice(fwd, strike, volatility + dVol, _expiry);
-                var call = SmileOptimizer.CallPrice(fwd, strike, volatility, _expiry);
-                var callDown = SmileOptimizer.CallPrice(fwd, strike, volatility - dVol, _expiry);
+                tasks[i] = Task.Run(() =>
+                {
+                    var k = _customDistribution.SubX[index];
+                    var strike = fwd * System.Math.Exp(k);
+                    var volatility = _smile.GetVol(fwd, strike);
 
-                var vega = (callUp - call) * one_over_dVol;
-                var vomma = (callUp + callDown - 2.0 * call) * one_over_dVolSq;
+                    var callUp = SmileOptimizer.CallPrice(fwd, strike, volatility + dVol, _expiry);
+                    var call = SmileOptimizer.CallPrice(fwd, strike, volatility, _expiry);
+                    var callDown = SmileOptimizer.CallPrice(fwd, strike, volatility - dVol, _expiry);
 
-                var dCall = dCalldt(k, fwd, interpolator);
-                var dVolatility = dCall / vega - 0.5 * vomma / System.Math.Pow(vega, 3) * dCall * dCall;
+                    var vega = (callUp - call) * one_over_dVol;
+                    var vomma = (callUp + callDown - 2.0 * call) * one_over_dVolSq;
 
-                res[index] = new VolPoint(strike, volatility + dVolatility);
+                    var dCall = dCalldt(k, fwd, interpolator);
+                    var dVolatility = dCall / vega - 0.5 * vomma / System.Math.Pow(vega, 3) * dCall * dCall;
 
-
-                //tasks[i] = Task.Run(() =>
-                //{
-                //    var k = _customDistribution.SubX[index];
-                //    var strike = fwd * System.Math.Exp(k);
-                //    var volatility = _smile.GetVol(fwd, strike);
-
-                //    var callUp = SmileOptimizer.CallPrice(fwd, strike, volatility + dVol, _expiry);
-                //    var call = SmileOptimizer.CallPrice(fwd, strike, volatility, _expiry);
-                //    var callDown = SmileOptimizer.CallPrice(fwd, strike, volatility - dVol, _expiry);
-
-                //    var vega = (callUp - call) * one_over_dVol;
-                //    var vomma = (callUp + callDown - 2.0 * call) * one_over_dVolSq;
-
-                //    var dCall = dCalldt(k, fwd, interpolator);
-                //    var dVolatility = dCall / vega - 0.5 * vomma / System.Math.Pow(vega, 3) * dCall * dCall;
-
-                //    res[index] = new VolPoint(strike, volatility + dVolatility);
-                //});
+                    res[index] = new VolPoint(strike, volatility + dVolatility);
+                });
             }
 
             Task.WaitAll(tasks);
@@ -144,16 +132,7 @@ namespace OneXMM.Math.Models
         private Func<double, double, IInterpolator, double> dCalldt = (k, fwd, interpolator) =>
         {
             var strike = fwd * System.Math.Exp(k);
-            return AdaptiveTrapezoid((x) => (fwd * System.Math.Exp(x) - strike) * interpolator.Interpolate(x), k, 15, 1E-10);
+            return MathNet.Numerics.Integration.GaussKronrodRule.Integrate((x) => (fwd * System.Math.Exp(x) - strike) * interpolator.Interpolate(x), k, 15, out var err, out var norm);
         };
-
-        private static double AdaptiveTrapezoid(Func<double, double> f, double a, double b, double tol)
-        {
-            double mid = 0.5 * (a + b);
-            double I1 = 0.5 * (b - a) * (f(a) + f(b));
-            double I2 = 0.5 * (b - a) * (f(a) + 2 * f(mid) + f(b)) / 2.0;
-            if (System.Math.Abs(I2 - I1) < tol) return I2;
-            return AdaptiveTrapezoid(f, a, mid, tol / 2) + AdaptiveTrapezoid(f, mid, b, tol / 2);
-        }
     }
 }
