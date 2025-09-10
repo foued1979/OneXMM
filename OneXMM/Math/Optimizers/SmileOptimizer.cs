@@ -30,9 +30,9 @@ namespace OneXMM.Math.Optimizers
             }
         }
 
-        public static bool CalibrateSmile(double spot, double fwd, ref ISmile smile, Dictionary<Option, double> options)
+        public static bool CalibrateSmile(ref ISmile smile, double[] strikes, double[] targetVols)
         {
-            var nelderMead = new NelderMead(new VolObjectiveFunction(smile.SmileDate, spot, fwd, smile, options));
+            var nelderMead = new NelderMead(new VolObjectiveFunction(smile, strikes, targetVols));
             nelderMead.Convergence = new Accord.Math.Convergence.GeneralConvergence(4)
             {
                 MaximumEvaluations = 1500,
@@ -40,21 +40,29 @@ namespace OneXMM.Math.Optimizers
                 AbsoluteParameterTolerance = [1E-12, 1E-12, 1E-12, 1E-12]
             };
 
-            var initialGuess = new double[4];
+            var success = nelderMead.Minimize(smile.GetInitialGuess());
+            smile.UpdateParameters(nelderMead.Solution);
+            return success;
+        }
 
-            initialGuess[0] = 0.5;
-            initialGuess[1] = 0.35;
-            initialGuess[2] = 0.72;
-            initialGuess[3] = 0.2;
+        public static bool CalibrateSmile(double spot, ref ISmile smile, Dictionary<Option, double> options)
+        {
+            var nelderMead = new NelderMead(new VolObjectiveFunction(smile.SmileDate, spot, smile, options));
+            nelderMead.Convergence = new Accord.Math.Convergence.GeneralConvergence(4)
+            {
+                MaximumEvaluations = 1500,
+                AbsoluteFunctionTolerance = 1E-10,
+                AbsoluteParameterTolerance = [1E-12, 1E-12, 1E-12, 1E-12]
+            };
 
-            var success = nelderMead.Minimize(initialGuess);
+            var success = nelderMead.Minimize(smile.GetInitialGuess());
             smile.UpdateParameters(nelderMead.Solution);
             return success;
         }
 
         public static bool CalibrateSmile(double fwd, ref ISmile smile, CallOption[] options)
         {
-            var nelderMead = new NelderMead(new VolObjectiveFunction(fwd, smile, options));
+            var nelderMead = new NelderMead(new VolObjectiveFunction(smile, options));
             nelderMead.Convergence = new Accord.Math.Convergence.GeneralConvergence(4)
             {
                 MaximumEvaluations = 1500,
@@ -62,33 +70,28 @@ namespace OneXMM.Math.Optimizers
                 AbsoluteParameterTolerance = [1E-12, 1E-12, 1E-12, 1E-12]
             };
 
-            var initialGuess = new double[4];
-
-            initialGuess[0] = 0.5;
-            initialGuess[1] = 0.35;
-            initialGuess[2] = 0.72;
-            initialGuess[3] = 0.2;
-
-            var success = nelderMead.Minimize(initialGuess);
+            var success = nelderMead.Minimize(smile.GetInitialGuess());
             smile.UpdateParameters(nelderMead.Solution);
             return success;
         }
 
         private class VolObjectiveFunction : NonlinearObjectiveFunction
         {
-            public VolObjectiveFunction(DateTime asof, double spot, double fwd, ISmile smile, Dictionary<Option, double> options)
+            public VolObjectiveFunction(DateTime asof, double spot, ISmile smile, Dictionary<Option, double> options)
             {
-                NumberOfVariables = 4;
+                NumberOfVariables = smile.GetInitialGuess().Length;
+                var smileConstraints = smile.GetSmileConstraints();
+
                 Function = new Func<double[], double>((x) =>
                 {
-                    if (x[3] < -1 || x[3] > 1 || x[2] < 0 || x[2] > 1) { return double.PositiveInfinity; }
+                    if (!smileConstraints.CheckSmileParameters(x)) { return double.PositiveInfinity; }
 
                     var res = 0.0;
                     smile.UpdateParameters(x);
 
                     foreach (var option in options)
                     {
-                        var err = option.Key.Price(asof, spot, fwd, smile) - option.Value;
+                        var err = option.Key.Price(asof, spot, smile.ForwardRef, smile) - option.Value;
                         res += err * err / option.Value;
                     }
 
@@ -96,20 +99,44 @@ namespace OneXMM.Math.Optimizers
                 });
             }
 
-            public VolObjectiveFunction(double fwd, ISmile smile, CallOption[] options)
+            public VolObjectiveFunction(ISmile smile, CallOption[] options)
             {
-                NumberOfVariables = 4;
+                NumberOfVariables = smile.GetInitialGuess().Length;
+                var smileConstraints = smile.GetSmileConstraints();
+
                 Function = new Func<double[], double>((x) =>
                 {
-                    if (x[3] < -1 || x[3] > 1 || x[2] < 0 || x[2] > 1) { return double.PositiveInfinity; }
+                    if (smileConstraints.CheckSmileParameters(x)) { return double.PositiveInfinity; }
 
                     var res = 0.0;
                     smile.UpdateParameters(x);
 
                     foreach (var option in options)
                     {
-                        var err = CallPrice(fwd, option.Strike, smile.GetVol(fwd, option.Strike), smile.Expiry) - option.Price;
+                        var err = CallPrice(smile.ForwardRef, option.Strike, smile.GetVol(smile.ForwardRef, option.Strike), smile.Expiry) - option.Price;
                         res += err * err / option.Price;
+                    }
+
+                    return res;
+                });
+            }
+
+            public VolObjectiveFunction(ISmile smile, double[] strikes, double[] targetVols)
+            {
+                NumberOfVariables = smile.GetInitialGuess().Length;
+                var smileConstraints = smile.GetSmileConstraints();
+
+                Function = new Func<double[], double>((x) =>
+                {
+                    if (smileConstraints.CheckSmileParameters(x)) { return double.PositiveInfinity; }
+
+                    var res = 0.0;
+                    smile.UpdateParameters(x);
+
+                    for (int i = 0; i < strikes.Length; ++i)
+                    {
+                        var err = smile.GetVol(smile.ForwardRef, strikes[i]) - targetVols[i];
+                        res += err * err;
                     }
 
                     return res;

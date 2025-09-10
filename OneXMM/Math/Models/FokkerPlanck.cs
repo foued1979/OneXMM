@@ -26,10 +26,13 @@ namespace OneXMM.Math.Models
 
         private record VolPoint(double Strike, double Volatility);
 
+        public ISmile Smile => _smile.Copy();
+        public double[] StandardizedMoments => _customDistribution.StandardizedMoments;
+
         public FokkerPlanck(double spot, ISmile smile, ICurve fwdCurve, double dt) 
         {
             _spot = spot;
-            _smile = smile;
+            _smile = smile.Copy();
             _curve = fwdCurve;
 
             _expiry = smile.Expiry;
@@ -84,15 +87,20 @@ namespace OneXMM.Math.Models
             var newVolPoints = ComputeVolPoints(fwd, interpolator);
 
             _expiry += _dt;
-            _smile = new SABR(_smile.SmileDate, _smile.SmileExpiry.AddDays(_dt * 365));
-
             var newFwd = _curve.GetForward(_spot, _expiry);
+
+            _smile = new SABR(_smile.SmileDate, _smile.SmileExpiry.AddDays(_dt * 365), newFwd);
             var success = SmileOptimizer.CalibrateSmile(newFwd, ref _smile, newVolPoints.Select(p => new SmileOptimizer.CallOption(newFwd, p.Strike, p.Volatility, _expiry)).ToArray());
 
             if (success)
             {
                 _customDistribution = new CustomDistribution(newFwd, _smile);
             } else throw new Exception();
+        }
+
+        public void ComputeMoments()
+        {
+            _customDistribution.ComputeMoments();
         }
 
         private VolPoint[] ComputeVolPoints(double fwd, IInterpolator interpolator)

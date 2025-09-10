@@ -1,38 +1,49 @@
-﻿using System;
+﻿using Accord.Math.Optimization;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace OneXMM.Math.Models.Smiles
 {
-    using Accord.Math.Optimization;
     using OneXMM;
     using OneXMM.Interfaces;
+    using OneXMM.Math.Optimizers;
+    using OneXMM.Math.Optimizers.Constraints;
     using OneXMM.Pricing;
 
-    public sealed class SABR : ISmile
+    public sealed class SABR : ISmile<SABR>
     {
         private double _expiry;
         private double _sqrtExp;
 
+        public SmileConstraints GetSmileConstraints() => new SABRConstraints();
+
         public DateTime SmileDate { get; private set; }
         public DateTime SmileExpiry { get; }
+        public double ForwardRef { get; }
         public double Expiry => _expiry;
         
-        public double Alpha { get; set; }
-        public double Vega { get; set; }
-        public double Beta { get; set; }
-        public double Rho { get; set; }
+        public double Alpha { get; private set; }
+        public double Vega { get; private set; }
+        public double Beta { get; private set; }
+        public double Rho { get; private set; }
 
         private SortedDictionary<string, Option> _optionsBySymbol = new SortedDictionary<string, Option>();
         private SortedDictionary<double, Option> _options = new SortedDictionary<double, Option>();
 
         public SortedDictionary<double, Option> GetOptions() => _options;
 
-        public SABR(DateTime smileDate, DateTime smileExpiry)
+        public SABR(DateTime smileDate, DateTime smileExpiry, double forwardRef)
         {
             SmileDate = smileDate;
             SmileExpiry = smileExpiry;
+            ForwardRef = forwardRef;
             _expiry = (smileExpiry - SmileDate).TotalDays * Constants.OneOver365;
             _sqrtExp = System.Math.Sqrt(_expiry);
+
+            Alpha = 0.5;
+            Vega = 0.35;
+            Beta = 0.72;
+            Rho = 0.2;
         }
 
         public void UpdateParameters(params double[] args)
@@ -113,6 +124,56 @@ namespace OneXMM.Math.Models.Smiles
             var brent = new BrentSearch((x) => System.Math.Log(x) / (GetVol(forward, x * forward) * _sqrtExp) - moneyness, 0.0001, 10, 1E-8, 150);
             if (!brent.FindRoot()) throw new Exception("SABR - Cannot find strike from moneyness.");
             return brent.Solution * forward;
+        }
+
+        public ISmile GetForwardSmile(ISmile fromSmile)
+        {
+            if (Expiry < fromSmile.Expiry) throw new Exception($"SABR - Cannot substract long term variance to short term variance.");
+
+            var strikes = new double[19];
+            var vols = new double[19];
+
+            for (int i = 0; i < vols.Length; i++)
+            {
+                var f = 0.2 + i * 0.1;
+                strikes[i] = ForwardRef * f;
+
+                var volNext = GetVol(ForwardRef, strikes[i]);
+                var volPrev = fromSmile.GetVol(fromSmile.ForwardRef, strikes[i]);
+
+                vols[i] = System.Math.Sqrt(volNext * volNext * Expiry + volPrev * volPrev * fromSmile.Expiry);
+            }
+
+            var smile = (ISmile)new SABR(fromSmile.SmileExpiry, SmileExpiry, ForwardRef);
+            if (SmileOptimizer.CalibrateSmile(ref smile, strikes, vols)) return smile;
+
+            throw new Exception("SABR - Could not calibrate forward smile.");
+        }
+
+        public double[] GetInitialGuess()
+        {
+            return [Alpha, Vega, Beta, Rho];
+        }
+
+        public ISmile Copy()
+        {
+            var copy = new SABR(SmileDate, SmileExpiry, ForwardRef)
+            {
+                Alpha = Alpha,
+                Beta = Beta,
+                Rho = Rho,
+                Vega = Vega,
+            };
+
+            copy._options = new SortedDictionary<double, Option>(_options);
+            copy._optionsBySymbol = new SortedDictionary<string, Option>(_optionsBySymbol);
+
+            return copy;
+        }
+
+        public static ISmile operator-(SABR left, ISmile right)
+        {
+            return left.GetForwardSmile(right);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

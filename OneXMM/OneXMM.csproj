@@ -51,8 +51,11 @@
 
   <ItemGroup>
     <PackageReference Include="Accord" Version="3.8.0" />
+    <PackageReference Include="Accord.Extensions.Math" Version="3.0.1" />
+    <PackageReference Include="Accord.Extensions.Statistics" Version="3.0.1" />
     <PackageReference Include="Accord.Genetic" Version="3.8.0" />
     <PackageReference Include="Accord.Math" Version="3.8.0" />
+    <PackageReference Include="Accord.Neuro" Version="3.8.0" />
     <PackageReference Include="Accord.Statistics" Version="3.8.0" />
     <PackageReference Include="GeneticSharp" Version="3.1.4" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />

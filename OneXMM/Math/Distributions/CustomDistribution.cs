@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace OneXMM.Math.Distributions
 {
+    using MathNet.Numerics.Integration;
     using OneXMM.Interfaces;
     using OneXMM.Math.Extrapolators;
 
@@ -38,6 +39,7 @@ namespace OneXMM.Math.Distributions
                 return _subX;
             }
         }
+        public double[] StandardizedMoments { get; private set; } = [];
 
         static CustomDistribution()
         {
@@ -74,12 +76,13 @@ namespace OneXMM.Math.Distributions
             }
         }
 
-        public CustomDistribution(double forward, ISmile smile)
+        public CustomDistribution(ISmile smile)
         {
+            var forward = smile.ForwardRef;
             _fwd = forward;
 
             var sqrtT = System.Math.Sqrt(smile.Expiry);
-            var atmVol = smile.GetVol(forward, forward);
+            var atmVol = smile.GetVol(_fwd, _fwd);
             var vol_sqrtT = atmVol * sqrtT;
             var atmVar = 0.5 * atmVol * atmVol * smile.Expiry;
 
@@ -123,6 +126,26 @@ namespace OneXMM.Math.Distributions
             Norm(_x, ref _pdf);
 
             _interpolator = new Interpolators.PiecewiseLinearInterpolator<ZeroExtrapolator, ZeroExtrapolator>(_x, _pdf);
+        }
+
+        public void ComputeMoments()
+        {
+            StandardizedMoments = new double[5];
+            var mean = GaussLegendreRule.Integrate((x) => x * Pdf(x), -5, 5, 256);
+
+            var tasks = new Task<double>[4];
+            for (int i = 0; i < 4; i++)
+            {
+                tasks[i] = Task.Run(() => GaussLegendreRule.Integrate((x) => System.Math.Pow(x - mean, i + 2) * Pdf(x), -5, 5, 256));
+            }
+
+            Task.WaitAll(tasks);
+
+            StandardizedMoments[0] = mean;
+            StandardizedMoments[1] = System.Math.Sqrt(tasks[1].Result);
+            StandardizedMoments[2] = tasks[2].Result / System.Math.Pow(StandardizedMoments[1], 3);
+            StandardizedMoments[3] = tasks[3].Result / System.Math.Pow(StandardizedMoments[1], 4) - 3.0;
+            StandardizedMoments[4] = tasks[4].Result / System.Math.Pow(StandardizedMoments[1], 5);
         }
 
         private static void Norm(double[] d, ref double[] pdf)
